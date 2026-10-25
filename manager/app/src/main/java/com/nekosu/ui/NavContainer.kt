@@ -82,14 +82,12 @@ import com.nekosu.ui.screen.DynamicManagerScreen
 import com.nekosu.ui.screen.ExecuteModuleActionScreen
 import com.nekosu.ui.screen.FlashIt
 import com.nekosu.ui.screen.FlashScreen
-import com.nekosu.ui.screen.InstallScreen
 import com.nekosu.ui.screen.ScriptRunScreen
 import com.nekosu.ui.screen.SulogScreen
 import com.nekosu.ui.screen.TemplateEditorScreen
 import com.nekosu.ui.screen.UmountManagerScreen
 import com.nekosu.ui.screen.about.AboutScreen
 import com.nekosu.ui.screen.about.OpenSourceLicenseScreen
-import com.nekosu.ui.screen.kernelFlash.KernelFlashScreen
 import com.nekosu.ui.screen.main.MainScreen
 import com.nekosu.ui.screen.moduleRepo.AddRepositoryScreen
 import com.nekosu.ui.screen.moduleRepo.ModuleRepoScreen
@@ -456,17 +454,6 @@ fun NavContainer(
                     useBlur = useBlur,
                 ) { AddRepositoryScreen() }
             }
-            entry<Route.Install>(swipeDismiss = NavSwipeDirection.None) { key ->
-                ManagerNavEntry(
-                    interceptPredictiveBack = interceptPredictiveBack,
-                    onBack = onBack,
-                    themeConfig = themeConfig,
-                    backgroundRenderState = backgroundRenderState,
-                    useBlur = useBlur,
-                ) {
-                    InstallScreen(key.preselectedKernelUri)
-                }
-            }
             entry<Route.Flash>(swipeDismiss = swipeBackDirection) { key ->
                 ManagerNavEntry(
                     interceptPredictiveBack = interceptPredictiveBack,
@@ -588,17 +575,6 @@ fun NavContainer(
                     DynamicManagerScreen()
                 }
             }
-            entry<Route.KernelFlash>(swipeDismiss = NavSwipeDirection.None) { key ->
-                ManagerNavEntry(
-                    interceptPredictiveBack = interceptPredictiveBack,
-                    onBack = onBack,
-                    themeConfig = themeConfig,
-                    backgroundRenderState = backgroundRenderState,
-                    useBlur = useBlur,
-                ) {
-                    KernelFlashScreen(key.kernelUri, key.selectedSlot, key.skipKsud)
-                }
-            }
         }
     }
 }
@@ -703,26 +679,11 @@ private fun ManagerNavEntry(
 }
 
 private fun Route.Flash.toFlashIt(): FlashIt = when (flashType) {
-    Route.Flash.TYPE_BOOT -> FlashIt.FlashBoot(
-        boot = bootUri,
-        lkmUri = lkmUri,
-        kmi = kmi,
-        ota = ota,
-        partition = partition,
-        allowShell = allowShell,
-        enableAdb = enableAdb,
-        forceBackup = forceBackup,
-    )
-
     Route.Flash.TYPE_MODULE -> FlashIt.FlashModule(uris.firstOrNull().orEmpty())
 
     Route.Flash.TYPE_MODULES -> FlashIt.FlashModules(uris, currentIndex)
 
     Route.Flash.TYPE_MODULE_UPDATE -> FlashIt.FlashModuleUpdate(uris.firstOrNull().orEmpty())
-
-    Route.Flash.TYPE_RESTORE -> FlashIt.FlashRestore
-
-    Route.Flash.TYPE_UNINSTALL -> FlashIt.FlashUninstall
 
     else -> FlashIt.FlashModule(uris.firstOrNull().orEmpty())
 }

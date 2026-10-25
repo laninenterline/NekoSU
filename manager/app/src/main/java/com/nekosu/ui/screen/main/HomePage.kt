@@ -210,10 +210,6 @@ fun HomePage(
                                     modifier = Modifier.size(18.dp),
                                 )
                             },
-                            onClick = {
-                                if (uiState.systemStatus.isLateLoadMode) return@WarningCard
-                                navigator.push(Route.Install(preselectedKernelUri = null))
-                            },
                         )
                     } else {
                         WarningCard(
@@ -229,10 +225,6 @@ fun HomePage(
                                     tint = MaterialTheme.colorScheme.onErrorContainer,
                                     modifier = Modifier.size(18.dp),
                                 )
-                            },
-                            onClick = {
-                                if (uiState.systemStatus.isLateLoadMode) return@WarningCard
-                                navigator.push(Route.Install(preselectedKernelUri = null))
                             },
                         )
                     }
@@ -324,10 +316,6 @@ fun HomePage(
 
                 StatusCard(
                     uiState = uiState,
-                    onClickInstall = {
-                        if (uiState.systemStatus.isLateLoadMode) return@StatusCard
-                        navigator.push(Route.Install(preselectedKernelUri = null))
-                    },
                     onClickJailbreak = {
                         loadingDialog.showLoading()
                         context.startService(Intent(context, MagicaService::class.java))
@@ -579,15 +567,9 @@ private fun TopBar(
 @Composable
 private fun StatusCard(
     uiState: HomeUiState,
-    onClickInstall: () -> Unit = {},
     onClickJailbreak: () -> Unit = {},
 ) {
     val systemStatus = uiState.systemStatus
-    val onClick = { _: Offset ->
-        if (systemStatus.isRootAvailable || systemStatus.kernelVersion.isGKI()) {
-            onClickInstall()
-        }
-    }
 
     when {
         systemStatus.ksuVersion != null -> {
@@ -637,7 +619,6 @@ private fun StatusCard(
                         )
                     }
                 },
-                onClick = onClick,
             )
         }
 
@@ -647,9 +628,8 @@ private fun StatusCard(
                 iconSize = 18.dp,
                 isError = true,
                 containerColor = MaterialTheme.colorScheme.errorContainer,
-                title = stringResource(R.string.home_not_installed),
-                description = stringResource(R.string.home_click_to_install),
-                onClick = onClick,
+                title = stringResource(R.string.home_temp_root_inactive),
+                description = stringResource(R.string.home_temp_root_inactive_hint),
                 trailingContent = if (systemStatus.isSELinuxPermissive) {
                     {
                         Button(

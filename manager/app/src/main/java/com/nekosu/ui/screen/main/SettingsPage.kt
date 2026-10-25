@@ -505,11 +505,6 @@ fun SettingsPage(bottomPadding: Dp) {
                                 )
                             }
                         }
-                        item(visible = homeState.systemStatus.lkmMode == true && !homeState.systemStatus.isLateLoadMode) {
-                            UninstallItem {
-                                loadingDialog.withLoading(it)
-                            }
-                        }
                     },
                 )
             }
@@ -644,75 +639,6 @@ fun LogActionButton(
             style = MaterialTheme.typography.bodyMedium,
         )
     }
-}
-
-@SuppressLint("LocalContextGetResourceValueCall")
-@Composable
-fun UninstallItem(
-    withLoading: suspend (suspend () -> Unit) -> Unit,
-) {
-    val navigator = LocalNavigator.current
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val uninstallConfirmDialog = rememberConfirmDialog()
-    val showTodo = {
-        Toast.makeText(context, "TODO", Toast.LENGTH_SHORT).show()
-    }
-    val options = remember {
-        listOf(
-            UninstallType.PERMANENT,
-            UninstallType.RESTORE_STOCK_IMAGE,
-        )
-    }
-
-    SettingsChooseWidget(
-        icon = Icons.TwoTone.Delete,
-        title = stringResource(id = R.string.settings_uninstall),
-        items = options.map { stringResource(it.title) },
-        itemDescriptions = options.map {
-            if (it.message != 0) stringResource(it.message) else null
-        },
-        selectedIndex = -1,
-        onSelectedIndexChange = { index ->
-            options.getOrNull(index)?.let { uninstallType ->
-                scope.launch {
-                    val result = uninstallConfirmDialog.awaitConfirm(
-                        title = context.getString(uninstallType.title),
-                        content = context.getString(uninstallType.message),
-                    )
-                    if (result == ConfirmResult.Confirmed) {
-                        withLoading {
-                            when (uninstallType) {
-                                UninstallType.TEMPORARY -> showTodo()
-                                UninstallType.PERMANENT -> navigator.push(Route.Flash.uninstall())
-                                UninstallType.RESTORE_STOCK_IMAGE -> navigator.push(Route.Flash.restore())
-                                UninstallType.NONE -> Unit
-                            }
-                        }
-                    }
-                }
-            }
-        },
-    )
-}
-
-enum class UninstallType(@param:StringRes val title: Int, @param:StringRes val message: Int, val icon: ImageVector) {
-    TEMPORARY(
-        R.string.settings_uninstall_temporary,
-        R.string.settings_uninstall_temporary_message,
-        Icons.TwoTone.Delete,
-    ),
-    PERMANENT(
-        R.string.settings_uninstall_permanent,
-        R.string.settings_uninstall_permanent_message,
-        Icons.TwoTone.DeleteForever,
-    ),
-    RESTORE_STOCK_IMAGE(
-        R.string.settings_restore_stock_image,
-        R.string.settings_restore_stock_image_message,
-        Icons.AutoMirrored.TwoTone.Undo,
-    ),
-    NONE(0, 0, Icons.TwoTone.Delete),
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)

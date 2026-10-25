@@ -181,8 +181,6 @@ import com.nekosu.ui.viewmodel.DynamicManagerViewModel
 import com.nekosu.ui.viewmodel.ExecuteModuleActionViewModel
 import com.nekosu.ui.viewmodel.FlashViewModel
 import com.nekosu.ui.viewmodel.HomeViewModel
-import com.nekosu.ui.viewmodel.InstallViewModel
-import com.nekosu.ui.viewmodel.KernelFlashViewModel
 import com.nekosu.ui.viewmodel.MainIntentViewModel
 import com.nekosu.ui.viewmodel.ModuleDetailViewModel
 import com.nekosu.ui.viewmodel.ModuleRepoViewModel
@@ -451,9 +449,7 @@ val viewModelModule = module {
         )
     }
     viewModelOf(::HomeViewModel)
-    viewModelOf(::InstallViewModel)
     viewModelOf(::MainIntentViewModel)
-    viewModelOf(::KernelFlashViewModel)
     viewModelOf(::SettingsViewModel)
     viewModelOf(::ModuleViewModel)
     viewModelOf(::SuperUserViewModel)

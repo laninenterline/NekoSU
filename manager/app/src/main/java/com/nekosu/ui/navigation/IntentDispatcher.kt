@@ -40,10 +40,6 @@ private sealed interface PendingAction {
         val requiresConfirmation: Boolean,
     ) : PendingAction
 
-    data class InstallKernel(
-        val zipFileInfo: ZipFileInfo,
-    ) : PendingAction
-
     data class ExecuteAction(val moduleId: String) : PendingAction
 
     data class OpenWebUI(val moduleId: String) : PendingAction
@@ -147,9 +143,12 @@ private fun resolveIntent(context: Context, intent: Intent, intentToken: String,
             return null
         }
 
-        return PendingAction.InstallKernel(
-            zipFileInfo = zipFileInfos.first(),
-        )
+        Toast.makeText(
+            context,
+            context.getString(R.string.temp_root_kernel_install_disabled),
+            Toast.LENGTH_SHORT,
+        ).show()
+        return null
     } else {
         return PendingAction.InstallModules(
             zipFileInfos = zipFileInfos,
@@ -189,13 +188,8 @@ fun IntentDispatcher(intentChannel: ReceiveChannel<Intent>) {
         zipFiles = pendingZipFiles,
         onConfirm = { zipFiles ->
             pendingZipFiles = emptyList()
-            if (zipFiles.first().type == ZipType.KERNEL) {
-                // flash kernel
-                navigator.push(Route.Install(preselectedKernelUri = zipFiles.first().uri.toString()))
-            } else {
-                // must be flash module
-                navigator.push(Route.Flash.modules(zipFiles.map { it.uri }.map(Uri::toString)))
-            }
+            // 仅支持临时 root 模式：不提供内核安装，只处理模块刷写
+            navigator.push(Route.Flash.modules(zipFiles.map { it.uri }.map(Uri::toString)))
         },
         onDismiss = {
             activity?.finish()
@@ -219,10 +213,6 @@ fun IntentDispatcher(intentChannel: ReceiveChannel<Intent>) {
                 } else {
                     navigator.push(Route.Flash.modules(action.zipFileInfos.map { it.uri }.map(Uri::toString)))
                 }
-            }
-
-            is PendingAction.InstallKernel -> {
-                pendingZipFiles = listOf(action.zipFileInfo)
             }
 
             is PendingAction.ExecuteAction -> {

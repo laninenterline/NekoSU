@@ -64,10 +64,6 @@ sealed interface Route :
 
     @Parcelize
     @Serializable
-    data class Install(val preselectedKernelUri: String?) : Route
-
-    @Parcelize
-    @Serializable
     data class ModuleRepoDetail(val moduleId: String, val repositoryUrl: String) : Route
 
     @Parcelize
@@ -98,40 +94,14 @@ sealed interface Route :
         val forceBackup: Boolean = false,
     ) : Route {
         companion object {
-            const val TYPE_BOOT = "boot"
             const val TYPE_MODULE = "module"
             const val TYPE_MODULES = "modules"
             const val TYPE_MODULE_UPDATE = "module_update"
-            const val TYPE_RESTORE = "restore"
-            const val TYPE_UNINSTALL = "uninstall"
-
-            fun boot(
-                bootUri: String?,
-                lkmUri: String?,
-                kmi: String?,
-                ota: Boolean,
-                partition: String?,
-                allowShell: Boolean = false,
-                enableAdb: Boolean = false,
-                forceBackup: Boolean = false,
-            ) = Flash(
-                flashType = TYPE_BOOT,
-                bootUri = bootUri,
-                lkmUri = lkmUri,
-                kmi = kmi,
-                ota = ota,
-                partition = partition,
-                allowShell = allowShell,
-                enableAdb = enableAdb,
-                forceBackup = forceBackup,
-            )
 
             fun module(uri: String) = Flash(TYPE_MODULE, uris = listOf(uri))
             fun modules(uris: List<String>, currentIndex: Int = 0) = Flash(TYPE_MODULES, uris = uris, currentIndex = currentIndex)
 
             fun moduleUpdate(uri: String) = Flash(TYPE_MODULE_UPDATE, uris = listOf(uri))
-            fun restore() = Flash(TYPE_RESTORE)
-            fun uninstall() = Flash(TYPE_UNINSTALL)
         }
     }
 
@@ -166,12 +136,4 @@ sealed interface Route :
     @Parcelize
     @Serializable
     data object DynamicManager : Route
-
-    @Parcelize
-    @Serializable
-    data class KernelFlash(
-        val kernelUri: String,
-        val selectedSlot: String?,
-        val skipKsud: Boolean = false,
-    ) : Route
 }

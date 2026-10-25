@@ -4,6 +4,9 @@
     <string name="learn_more">Learn more</string>
     <string name="home_not_installed">Not installed</string>
     <string name="home_click_to_install">Click to install</string>
+    <string name="home_temp_root_inactive">Temporary root not active</string>
+    <string name="home_temp_root_inactive_hint">This build only supports temporary root. Load the kernel module with an external tool (or use Jailbreak), then reopen this app.</string>
+    <string name="temp_root_kernel_install_disabled">This build only supports temporary root; kernel installation is disabled.</string>
     <string name="home_working">Working</string>
     <string name="home_unsupported">Unsupported</string>
     <string name="home_unsupported_reason">No KernelSU driver detected on your kernel, wrong kernel?</string>
