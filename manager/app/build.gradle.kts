@@ -149,7 +149,7 @@ android {
         }
 
         ndk {
-            abiFilters += listOf("arm64-v8a", "x86_64", "armeabi-v7a", "riscv64")
+            abiFilters += listOf("arm64-v8a")
         }
     }
 
@@ -157,7 +157,7 @@ android {
         abi {
             isEnable = isReleaseTask
             reset()
-            include("arm64-v8a", "x86_64", "armeabi-v7a", "riscv64")
+            include("arm64-v8a")
             isUniversalApk = true
         }
     }
