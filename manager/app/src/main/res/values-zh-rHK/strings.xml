@@ -547,4 +547,7 @@
     <string name="require_manager_version">需要更新管理器</string>
     <string name="require_kernel_version">需要更新內核。撳一下嚟安裝。</string>
     <string name="require_kernel_version_gki">需要更新內核</string>
+    <string name="home_temp_root_inactive">臨時 root 未啟用</string>
+    <string name="home_temp_root_inactive_hint">本版本僅支援臨時 root。請使用外部工具載入核心模組（或使用 Jailbreak），然後重新開啟本應用。</string>
+    <string name="temp_root_kernel_install_disabled">本版本僅支援臨時 root，已停用核心安裝。</string>
 </resources>

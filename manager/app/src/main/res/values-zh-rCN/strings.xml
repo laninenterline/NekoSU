@@ -671,4 +671,7 @@
     <string name="superuser_root_access_required">加载应用列表需要 Root 权限。</string>
     <string name="superuser_service_start_failed">RootService 启动失败，请重试以加载应用列表。</string>
     <string name="superuser_packages_load_failed">从 RootService 加载应用列表失败，请重试。</string>
+    <string name="home_temp_root_inactive">临时 root 未激活</string>
+    <string name="home_temp_root_inactive_hint">本版本仅支持临时 root。请使用外部工具加载内核模块（或使用 Jailbreak），然后重新打开本应用。</string>
+    <string name="temp_root_kernel_install_disabled">本版本仅支持临时 root，已禁用内核安装。</string>
 </resources>

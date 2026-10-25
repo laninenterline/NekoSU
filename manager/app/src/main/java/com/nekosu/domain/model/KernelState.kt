@@ -24,7 +24,6 @@ data class KernelStatus(
     val isRootAvailable: Boolean = false,
     val isFullFeatured: Boolean = false,
     val isSELinuxPermissive: Boolean = false,
-    val isOfficialSignature: Boolean = true,
     val kernelPatchImplementation: KernelPatchImplementation = KernelPatchImplementation.NONE,
     val hookType: String = "",
     val isSafeMode: Boolean = false,
