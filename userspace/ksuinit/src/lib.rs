@@ -459,6 +459,18 @@ fn init_module_buffer(mut buffer: Vec<u8>, params: &CStr) -> Result<()> {
         }
     };
 
+    // Align vermagic with the running kernel before the first attempt: the
+    // required release comes from /proc/sys/kernel/osrelease, so the same image
+    // works across kernels/OTAs and no OEM kmsg line is needed.
+    if let Some(required) = vermagic_from_osrelease(&buffer) {
+        if module_vermagic(&buffer).as_deref() != Some(required.as_str()) {
+            log::info!("Adjusting module vermagic to {required:?}");
+            replace_module_vermagic(&mut buffer, &required)
+                .context("Cannot replace module vermagic")?;
+        }
+    }
+
+    log::info!("Calling init_module");
     match init_module(&buffer, params) {
         Ok(()) => Ok(()),
         Err(first_error) => {
