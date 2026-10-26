@@ -44,6 +44,43 @@ fn dump_process_info(label: &str) {
     );
 }
 
+/// Load the embedded SUSFS LKM for the running kernel if SUSFS is not already active.
+///
+/// SUSFS on GKI is shipped as a separate loadable module; this makes it part of the
+/// manager/ksud bundle so that a temporary-root activation brings SUSFS up as well,
+/// without flashing a separate KernelSU module.
+fn load_embedded_susfs() {
+    // Already present (built-in kernel SUSFS, or loaded earlier)?
+    if std::path::Path::new("/proc/susfs_path").exists()
+        || std::path::Path::new("/sys/module/susfs_guard_lkm").exists()
+    {
+        info!("SUSFS already present, skip embedded SUSFS LKM");
+        return;
+    }
+
+    let kmi = match crate::boot_patch::get_current_kmi() {
+        Ok(kmi) => kmi,
+        Err(e) => {
+            warn!("SUSFS LKM: cannot detect KMI: {e:#}");
+            return;
+        }
+    };
+    let name = format!("{kmi}_susfs_guard_lkm.ko");
+    let data = match assets::get_asset(&name) {
+        Ok(data) => data,
+        Err(_) => {
+            info!("SUSFS LKM: no embedded {name}, skip");
+            return;
+        }
+    };
+
+    info!("SUSFS LKM: loading {name} ...");
+    match ksuinit::load_module(&data, cstr!("expose_proc=1")) {
+        Ok(()) => info!("SUSFS LKM loaded successfully"),
+        Err(e) => warn!("SUSFS LKM load failed: {e:#}"),
+    }
+}
+
 pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Result<()> {
     utils::daemonize(false)?;
     info!("late-load command triggered!");
@@ -77,6 +114,8 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
         info!("kernelsu.ko loaded successfully!");
         dump_process_info("after load_module");
     }
+
+    load_embedded_susfs();
 
     // We need to reset stdin/stdout/stderr; otherwise, sending file descriptors via cmd transactions
     // will be blocked by SELinux because its fsec->sid is still u:r:su:s0 instead of u:r:ksu:s0.
