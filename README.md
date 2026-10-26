@@ -107,3 +107,10 @@ SUSFS 以可加载模块形式提供，来源 [inforcqb/susfs4ksu-lkm](https://g
 - 仅临时 root：每次重启后需要重新触发加载（Jailbreak / 漏洞工具）
 - 内核符号通过 `/proc/kallsyms` 绑定，需 root 上下文；设备内核缺少符号时会加载失败
 - 仅支持 GKI 2.0（5.10+）内核
+
+## 管理器签名证书限制
+
+内核 `kernel/manager/apk_sign.c` 限制管理器 APK 的 v2 证书 DER 不超过 **1024 字节**
+(`CERT_MAX_LENGTH`)，且 APK 必须只有 v2 签名、不能带 v1。
+生成 release keystore 时请用 RSA 2048 或 EC P-256（EC 约 318 字节）；
+RSA 4096 的证书约 1.3KB，会被内核以 `cert length overlimit` 拒绝。
