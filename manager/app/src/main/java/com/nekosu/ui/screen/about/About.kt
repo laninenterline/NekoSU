@@ -180,7 +180,7 @@ fun AboutScreen() {
                             icon = Icons.TwoTone.Code,
                             title = stringResource(R.string.get_source_code),
                             description = stringResource(R.string.get_source_code_detail),
-                            onClick = { uriHandler.openUri("https://github.com/NekoSU/NekoSU") },
+                            onClick = { uriHandler.openUri("https://github.com/laninenterline/NekoSU") },
                         )
                     }
                     item {

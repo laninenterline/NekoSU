@@ -17,7 +17,7 @@ class ManagerUpdateRepository(
     private companion object {
         const val UPDATE_CALL_TIMEOUT_SECONDS = 8L
         const val TAG = "ManagerUpdateRepository"
-        const val REPOSITORY = "NekoSU/NekoSU" // TODO: replace with the real NekoSU repository
+        const val REPOSITORY = "laninenterline/NekoSU" // TODO: replace with the real NekoSU repository
         const val WORKFLOW_FILE = "build-manager.yml"
         const val BRANCH = "main"
         const val RELEASE_ARTIFACT = "Manager-release"

@@ -107,7 +107,7 @@ Branch: {branch}
 ```
 {commit_line}
 [Workflow run]({run_url})
-[Get latest main Debug build](https://nightly.link/NekoSU/NekoSU/workflows/build-manager/main/Manager-debug.zip)
+[Get latest main Debug build](https://nightly.link/laninenterline/NekoSU/workflows/build-manager/main/Manager-debug.zip)
 """.strip()
 
 MAIN_UPDATED_MSG ="""
