@@ -1,22 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- NekoSU launcher icon: cat face (user-provided asset) -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
+    <!-- 964x964 artwork centered/scaled into the 108dp adaptive-icon canvas -->
     <group
-        android:scaleX="0.135"
-        android:scaleY="0.135">
+        android:translateX="17.75"
+        android:translateY="20.34"
+        android:scaleX="0.0772"
+        android:scaleY="0.0772">
         <path
-            android:pathData="M 259 259 H 541 V 541 H 259 V 259 Z"
-            android:strokeWidth="18"
-            android:strokeColor="#1e110d" />
+            android:fillColor="#FFFFFF"
+            android:pathData="M 233,591 L 227,585 L 220,584 L 156,614 L 112,641 L 104,649 L 104,657 L 111,662 L 123,662 L 168,643 L 218,610 L 231,597 Z" />
         <path
-            android:fillColor="#1e110d"
-            android:pathData="M 257 257 H 407 V 407 H 257 V 257 Z" />
+            android:fillColor="#FFFFFF"
+            android:pathData="M 717,587 L 715,595 L 723,603 L 792,640 L 817,648 L 830,647 L 838,640 L 831,631 L 762,595 L 726,583 Z" />
         <path
-            android:fillColor="#1e110d"
-            android:pathData="M 393 393 H 543 V 543 H 393 V 393 Z" />
+            android:fillColor="#FFFFFF"
+            android:pathData="M 208,524 L 200,519 L 131,529 L 78,533 L 61,538 L 57,542 L 56,549 L 65,557 L 82,561 L 115,561 L 147,557 L 188,544 L 200,536 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 741,525 L 741,528 L 749,533 L 801,541 L 873,546 L 884,538 L 884,531 L 877,524 L 852,518 L 773,516 L 749,519 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 374,491 L 366,493 L 358,507 L 353,528 L 350,562 L 355,608 L 359,619 L 367,627 L 375,625 L 385,611 L 393,572 L 389,517 L 382,498 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 575,490 L 569,490 L 562,498 L 554,532 L 556,595 L 560,609 L 569,618 L 577,616 L 587,601 L 593,566 L 590,516 L 585,501 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 55,437 L 55,441 L 64,450 L 133,471 L 165,478 L 176,469 L 170,461 L 98,431 L 69,427 L 62,429 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 876,415 L 868,408 L 856,408 L 827,418 L 769,449 L 765,454 L 766,462 L 772,466 L 779,465 L 845,440 L 872,425 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 162,352 L 164,367 L 168,375 L 176,376 L 183,372 L 206,345 L 252,269 L 263,257 L 268,257 L 277,267 L 300,308 L 326,345 L 355,377 L 378,397 L 412,404 L 445,407 L 528,405 L 554,399 L 572,391 L 595,371 L 613,343 L 649,271 L 656,261 L 662,258 L 678,277 L 717,350 L 733,373 L 740,379 L 744,379 L 748,374 L 749,364 L 741,321 L 713,260 L 696,235 L 678,218 L 666,213 L 656,213 L 643,218 L 618,242 L 578,300 L 557,353 L 548,366 L 415,363 L 386,360 L 380,353 L 344,279 L 323,247 L 299,220 L 288,213 L 276,210 L 260,213 L 240,224 L 191,277 L 169,318 L 163,338 Z" />
     </group>
 </vector>
