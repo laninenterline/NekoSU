@@ -24,7 +24,6 @@ import com.nekosu.R
 import com.nekosu.data.module.registry.DownloadVerificationException
 import com.nekosu.data.module.registry.RegistryDownloadStore
 import com.nekosu.data.module.registry.copyForInstall
-import com.nekosu.domain.model.LkmSelection
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -311,23 +310,6 @@ class KsuCliRepository(context: Context) {
         }.getOrDefault(true)
     }
 
-    fun flashAnyKernel(
-        zipFile: File,
-        slot: String?,
-        onStdout: (String) -> Unit,
-        onStderr: (String) -> Unit,
-    ): Boolean {
-        val command = buildString {
-            append("${getKsuDaemonPath()} anykernel3 ${shellQuote(zipFile.absolutePath)}")
-            slot?.let {
-                append(" --slot ${shellQuote(it)}")
-            }
-        }
-        val result = flashWithIO(command, onStdout, onStderr)
-        Log.i(TAG, "AnyKernel3 flash result: ${result.isSuccess}, code: ${result.code}")
-        return result.isSuccess
-    }
-
     fun runModuleAction(
         moduleId: String,
         onStdout: (String) -> Unit,
@@ -370,134 +352,6 @@ class KsuCliRepository(context: Context) {
 
     fun removeScriptDirectory(path: String): Boolean = withNewRootShell {
         isRoot && ShellUtils.fastCmdResult(this, "rm -rf -- ${shellQuote(path)}")
-    }
-
-    fun restoreBoot(
-        onFinish: (Boolean, Int) -> Unit,
-        onStdout: (String) -> Unit,
-        onStderr: (String) -> Unit,
-    ): Boolean {
-        val result = flashWithIO(
-            "${getKsuDaemonPath()} boot-restore -f",
-            onStdout,
-            onStderr,
-        )
-        onFinish(result.isSuccess, result.code)
-        return result.isSuccess
-    }
-
-    fun uninstallPermanently(
-        onFinish: (Boolean, Int) -> Unit,
-        onStdout: (String) -> Unit,
-        onStderr: (String) -> Unit,
-    ): Boolean {
-        val result =
-            flashWithIO(
-                "${getKsuDaemonPath()} uninstall --package-name ${BuildConfig.APPLICATION_ID}",
-                onStdout,
-                onStderr,
-            )
-        onFinish(result.isSuccess, result.code)
-        return result.isSuccess
-    }
-
-    fun installBoot(
-        context: Context,
-        bootUri: Uri?,
-        lkm: LkmSelection,
-        ota: Boolean,
-        partition: String?,
-        allowShell: Boolean = false,
-        enableAdb: Boolean = false,
-        forceBackup: Boolean = false,
-        onFinish: (Boolean, Int) -> Unit,
-        onStdout: (String) -> Unit,
-        onStderr: (String) -> Unit,
-    ): Boolean {
-        val resolver = context.contentResolver
-
-        val bootFile = bootUri?.let { uri ->
-            with(resolver.openInputStream(uri)) {
-                val bootFile = File(context.cacheDir, "boot.img")
-                bootFile.outputStream().use { output ->
-                    this?.copyTo(output)
-                }
-
-                bootFile
-            }
-        }
-
-        var cmd = "boot-patch"
-
-        cmd += if (bootFile == null) {
-            // no boot.img, use -f to flash
-            " -f"
-        } else {
-            " -b ${bootFile.absolutePath}"
-        }
-
-        if (ota) {
-            cmd += " -u"
-        }
-
-        var lkmFile: File? = null
-        when (lkm) {
-            is LkmSelection.LkmUri -> {
-                lkmFile = with(resolver.openInputStream(lkm.uri.toUri())) {
-                    val file = File(context.cacheDir, "kernelsu-tmp-lkm.ko")
-                    file.outputStream().use { output ->
-                        this?.copyTo(output)
-                    }
-
-                    file
-                }
-                cmd += " -m ${lkmFile.absolutePath}"
-            }
-
-            is LkmSelection.KmiString -> {
-                cmd += " --kmi ${lkm.value}"
-            }
-
-            LkmSelection.KmiNone -> {
-                // do nothing
-            }
-        }
-
-        // output dir
-        if (bootFile != null) {
-            val downloadsDir =
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            cmd += " -o $downloadsDir"
-        }
-
-        partition?.let { part ->
-            cmd += " --partition $part"
-        }
-
-        if (allowShell) {
-            cmd += " --allow-shell"
-        }
-        if (enableAdb) {
-            cmd += " --enable-adbd"
-        }
-        if (forceBackup) {
-            cmd += " --backup"
-        }
-
-        val result = flashWithIO("${getKsuDaemonPath()} $cmd", onStdout, onStderr)
-        Log.i("KernelSU", "install boot result: ${result.isSuccess}")
-
-        bootFile?.delete()
-        lkmFile?.delete()
-
-        // if boot uri is empty, it is direct install, when success, we should show reboot button
-        onFinish(bootUri == null && result.isSuccess, result.code)
-
-        if (bootUri == null && result.isSuccess) {
-            install()
-        }
-
-        return result.isSuccess
     }
 
     fun reboot(reason: String = "") {

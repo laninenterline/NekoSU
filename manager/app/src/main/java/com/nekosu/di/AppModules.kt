@@ -88,7 +88,6 @@ import com.nekosu.domain.usecase.GetBooleanPreferenceUseCase
 import com.nekosu.domain.usecase.GetCatalogModuleUseCase
 import com.nekosu.domain.usecase.GetDefaultUmountModulesUseCase
 import com.nekosu.domain.usecase.GetHomeBasicInfoUseCase
-import com.nekosu.domain.usecase.GetInstallEnvironmentUseCase
 import com.nekosu.domain.usecase.GetKernelFeatureSettingsUseCase
 import com.nekosu.domain.usecase.GetKernelStatusUseCase
 import com.nekosu.domain.usecase.GetLastScriptRunUseCase
@@ -119,7 +118,6 @@ import com.nekosu.domain.usecase.ObserveCatalogModulesUseCase
 import com.nekosu.domain.usecase.ObserveDownloadUseCase
 import com.nekosu.domain.usecase.ObserveDynamicManagerStateUseCase
 import com.nekosu.domain.usecase.ObserveInstalledModulesUseCase
-import com.nekosu.domain.usecase.ObserveKernelFlashUseCase
 import com.nekosu.domain.usecase.ObserveModuleCatalogRefreshingUseCase
 import com.nekosu.domain.usecase.ObserveProfileTemplateOfflineUseCase
 import com.nekosu.domain.usecase.ObserveProfileTemplateRefreshingUseCase
@@ -162,7 +160,6 @@ import com.nekosu.domain.usecase.SetShellSuAdbOnlyEnabledUseCase
 import com.nekosu.domain.usecase.SetStringPreferenceUseCase
 import com.nekosu.domain.usecase.SetStringSetPreferenceUseCase
 import com.nekosu.domain.usecase.SetSuEnabledUseCase
-import com.nekosu.domain.usecase.StartKernelFlashUseCase
 import com.nekosu.domain.usecase.SuSFSConfigUseCase
 import com.nekosu.domain.usecase.TakeModuleUriPermissionUseCase
 import com.nekosu.domain.usecase.TransliterateTextUseCase
@@ -265,15 +262,13 @@ val repositoryModule = module {
         ApplicationInitializationRepository(
             application = get(),
             imageLoader = get(),
-            applicationScope = get(applicationScopeQualifier),
-            flashRepository = get(),
             ksuCliRepository = get(),
         )
     }
     singleOf(::ManagerUpdateRepository)
     singleOf(::ApplicationControlRepository)
     singleOf(::DownloadRepository)
-    single { FlashRepository(get(), get(applicationScopeQualifier), get(), get()) }
+    single { FlashRepository(get(), get(), get()) }
     singleOf(::KernelRepository)
     singleOf(::HomeRuntimeRepository)
     singleOf(::HomeStateRepository)
@@ -335,7 +330,6 @@ val useCaseModule = module {
     factoryOf(::ObserveDownloadUseCase)
     factoryOf(::ObserveAssetDownloadUseCase)
     factoryOf(::GetKernelStatusUseCase)
-    factoryOf(::GetInstallEnvironmentUseCase)
     factoryOf(::ExecuteFlashOperationUseCase)
     factoryOf(::CheckFlashModuleMountUseCase)
     factoryOf(::GetManagerRuntimeInfoUseCase)
@@ -404,8 +398,6 @@ val useCaseModule = module {
     factoryOf(::RefreshUmountPathsUseCase)
     factoryOf(::AddUmountPathUseCase)
     factoryOf(::RemoveUmountPathUseCase)
-    factoryOf(::ObserveKernelFlashUseCase)
-    factoryOf(::StartKernelFlashUseCase)
     factoryOf(::RemovePreferenceUseCase)
     factoryOf(::ObserveSuperUserStateUseCase)
     factoryOf(::RefreshSuperUsersUseCase)

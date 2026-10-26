@@ -72,12 +72,10 @@ import kotlinx.parcelize.Parcelize
 import com.nekosu.R
 import com.nekosu.domain.model.FlashOperation
 import com.nekosu.domain.model.FlashOperationUpdate
-import com.nekosu.domain.model.LkmSelection
 import com.nekosu.domain.model.MetaModuleStatus
 import com.nekosu.domain.usecase.CheckFlashModuleMountUseCase
 import com.nekosu.domain.usecase.ExecuteFlashOperationUseCase
 import com.nekosu.domain.usecase.ExtractModuleNameUseCase
-import com.nekosu.domain.usecase.IsLateLoadModeUseCase
 import com.nekosu.domain.usecase.IsModuleUriAccessibleUseCase
 import com.nekosu.ui.component.FlashOutputScreen
 import com.nekosu.ui.component.rememberCustomDialog
@@ -149,7 +147,6 @@ fun FlashScreen(flashIt: FlashIt) {
     val moduleUiState by viewModel.state.collectAsStateWithLifecycle()
     val flashUiState by flashViewModel.state.collectAsStateWithLifecycle()
     val hasMetaModule = moduleUiState.metaModuleStatus == MetaModuleStatus.ACTIVE
-    val isLateLoadMode = koinInject<IsLateLoadModeUseCase>()
 
     val errorCodeString = stringResource(R.string.error_code)
     val checkLogString = stringResource(R.string.check_log)
@@ -285,25 +282,12 @@ fun FlashScreen(flashIt: FlashIt) {
         }
     }
 
-    var flashEnabled by rememberSaveable { mutableStateOf(false) }
-
-    val needJailbreakWarning = flashIt is FlashIt.FlashBoot && isLateLoadMode()
-
-    if (needJailbreakWarning && !flashEnabled) {
-        JailbreakFlashWarningDialog(
-            onConfirm = { flashEnabled = true },
-            onDismiss = { navigator.pop() },
-        )
-    }
-
     // 安装但排除更新模块
-    LaunchedEffect(flashIt, flashEnabled) {
+    LaunchedEffect(flashIt) {
         if (flashIt is FlashIt.FlashModuleUpdate) return@LaunchedEffect
         if (hasExecuted || hasFlashCompleted || text.isNotEmpty()) {
             return@LaunchedEffect
         }
-
-        if (needJailbreakWarning && !flashEnabled) return@LaunchedEffect
 
         hasExecuted = true
         var currentModuleName = ""
@@ -420,8 +404,6 @@ fun FlashScreen(flashIt: FlashIt) {
         is FlashIt.FlashModuleUpdate,
         -> R.string.module_flash_complete
 
-        is FlashIt.FlashBoot -> R.string.patch_complete
-
         else -> null
     }
 
@@ -460,53 +442,6 @@ fun FlashScreen(flashIt: FlashIt) {
                     status = flashUiState.flashingStatus,
                     failedModules = currentStatus.failedModules,
                 )
-            }
-        },
-    )
-}
-
-private const val JAILBREAK_WARNING_COUNTDOWN = 10
-
-@Composable
-fun JailbreakFlashWarningDialog(
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var countdown by remember { mutableIntStateOf(JAILBREAK_WARNING_COUNTDOWN) }
-
-    LaunchedEffect(Unit) {
-        while (countdown > 0) {
-            delay(1000.milliseconds)
-            countdown--
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(android.R.string.dialog_alert_title)) },
-        text = {
-            Text(
-                stringResource(R.string.jailbreak_flash_warning),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                enabled = countdown == 0,
-            ) {
-                Text(
-                    if (countdown > 0) {
-                        stringResource(R.string.jailbreak_flash_warning_countdown, countdown)
-                    } else {
-                        stringResource(R.string.install_next)
-                    },
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(android.R.string.cancel))
             }
         },
     )
@@ -736,22 +671,9 @@ suspend fun getModuleNameFromUri(
 
 @Parcelize
 sealed class FlashIt : Parcelable {
-    data class FlashBoot(
-        val boot: String? = null,
-        val lkmUri: String? = null,
-        val kmi: String? = null,
-        val ota: Boolean,
-        val partition: String? = null,
-        val allowShell: Boolean = false,
-        val enableAdb: Boolean = false,
-        val forceBackup: Boolean = false,
-    ) : FlashIt()
-
     data class FlashModule(val uri: String) : FlashIt()
     data class FlashModules(val uris: List<String>, val currentIndex: Int = 0) : FlashIt()
     data class FlashModuleUpdate(val uri: String) : FlashIt() // 模块更新
-    data object FlashRestore : FlashIt()
-    data object FlashUninstall : FlashIt()
 }
 
 // 模块更新刷写
@@ -779,20 +701,6 @@ private suspend fun flashIt(
     onStderr: (String) -> Unit,
 ) {
     val operation = when (flashIt) {
-        is FlashIt.FlashBoot -> FlashOperation.Boot(
-            bootUri = flashIt.boot,
-            lkm = when {
-                flashIt.lkmUri != null -> LkmSelection.LkmUri(flashIt.lkmUri)
-                flashIt.kmi != null -> LkmSelection.KmiString(flashIt.kmi)
-                else -> LkmSelection.KmiNone
-            },
-            ota = flashIt.ota,
-            partition = flashIt.partition,
-            allowShell = flashIt.allowShell,
-            enableAdb = flashIt.enableAdb,
-            forceBackup = flashIt.forceBackup,
-        )
-
         is FlashIt.FlashModule -> FlashOperation.Module(flashIt.uri)
 
         is FlashIt.FlashModules -> {
@@ -806,9 +714,6 @@ private suspend fun flashIt(
 
         is FlashIt.FlashModuleUpdate -> FlashOperation.Module(flashIt.uri)
 
-        FlashIt.FlashRestore -> FlashOperation.Restore
-
-        FlashIt.FlashUninstall -> FlashOperation.Uninstall
     }
 
     execute(operation).collect { update ->
@@ -823,5 +728,5 @@ private suspend fun flashIt(
 @Preview
 @Composable
 private fun FlashScreenPreview() {
-    FlashScreen(FlashIt.FlashUninstall)
+    FlashScreen(FlashIt.FlashModule(""))
 }

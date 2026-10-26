@@ -7,16 +7,11 @@ import coil.Coil
 import coil.ImageLoader
 import com.topjohnwu.superuser.internal.MainShell
 import java.io.File
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import com.nekosu.data.flash.FlashRepository
 import com.nekosu.data.shell.KsuCliRepository
 
 class ApplicationInitializationRepository(
     private val application: Application,
     private val imageLoader: ImageLoader,
-    private val applicationScope: CoroutineScope,
-    private val flashRepository: FlashRepository,
     private val ksuCliRepository: KsuCliRepository,
 ) {
     @SuppressLint("RestrictedApi")
@@ -25,8 +20,5 @@ class ApplicationInitializationRepository(
         Coil.setImageLoader(imageLoader)
         File(application.dataDir, "webroot").mkdirs()
         Os.setenv("TMPDIR", application.cacheDir.absolutePath, true)
-        applicationScope.launch {
-            runCatching { flashRepository.getInstallEnvironment() }
-        }
     }
 }

@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.nekosu.domain.usecase.GetInstallEnvironmentUseCase
+import com.nekosu.data.shell.KsuCliRepository
 
 data class MainIntentUiState(
     val rootAvailable: Boolean = false,
@@ -26,7 +26,7 @@ sealed interface MainIntentUiEvent {
 }
 
 class MainIntentViewModel(
-    private val getInstallEnvironment: GetInstallEnvironmentUseCase,
+    private val ksuCliRepository: KsuCliRepository,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(MainIntentUiState())
     private val mutableEvents = MutableSharedFlow<MainIntentUiEvent>(extraBufferCapacity = 1)
@@ -45,10 +45,10 @@ class MainIntentViewModel(
 
     private fun load() {
         viewModelScope.launch {
-            runCatching { getInstallEnvironment() }
-                .onSuccess { environment ->
+            runCatching { ksuCliRepository.rootAvailable() }
+                .onSuccess { rootAvailable ->
                     mutableState.value = MainIntentUiState(
-                        rootAvailable = environment.rootAvailable,
+                        rootAvailable = rootAvailable,
                         loaded = true,
                     )
                 }
