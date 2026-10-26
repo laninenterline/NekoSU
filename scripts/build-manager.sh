@@ -20,6 +20,7 @@ export CXX_aarch64_linux_android="$NDKBIN/aarch64-linux-android29-clang++"
 export AR_aarch64_linux_android="$NDKBIN/llvm-ar"
 
 cd "$ROOT"
+cargo +nightly clean -p ksud >/dev/null 2>&1 || true
 cargo +nightly build --target aarch64-linux-android --release \
   --manifest-path userspace/ksud/Cargo.toml
 

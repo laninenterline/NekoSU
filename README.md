@@ -62,6 +62,9 @@ scripts/build-lkm.sh
 scripts/build-susfs-lkm.sh
 
 # 3) 构建 APK（编译 ksud 并内嵌 ko，然后 gradle）
+# 注意：bin/*.ko 变化后必须 cargo clean -p ksud（rust-embed 会缓存资源）
+# 可选：让 ko vermagic 与设备完全一致（推荐，部分 OEM 内核 kmsg 不打印 required vermagic）
+# DEVICE_RELEASE=$(adb shell getprop ro.kernel.version)  # 或直接用 adb shell uname -r 的值
 scripts/build-manager.sh
 ```
 

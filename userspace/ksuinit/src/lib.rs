@@ -416,6 +416,38 @@ where
     init_module_buffer(buffer, params)
 }
 
+
+/// Vermagic string embedded in the module's .modinfo data.
+fn module_vermagic(buffer: &[u8]) -> Option<String> {
+    const NEEDLE: &[u8] = b"vermagic=";
+    let pos = buffer.windows(NEEDLE.len()).position(|w| w == NEEDLE)?;
+    let start = pos + NEEDLE.len();
+    let end = start + buffer[start..].iter().position(|&b| b == 0)?;
+    std::str::from_utf8(&buffer[start..end]).ok().map(ToOwned::to_owned)
+}
+
+/// Last-resort vermagic: running kernel release + the module's own flags.
+///
+/// Used when init_module() is rejected but /dev/kmsg gave us no "version magic"
+/// line (some OEM kernels restrict or delay the log). The release comes from
+/// /proc/sys/kernel/osrelease, so the result matches what the kernel asks for.
+fn vermagic_from_osrelease(buffer: &[u8]) -> Option<String> {
+    let release = std::fs::read_to_string("/proc/sys/kernel/osrelease")
+        .ok()?
+        .trim()
+        .to_owned();
+    if release.is_empty() {
+        return None;
+    }
+    let current = module_vermagic(buffer)?;
+    let flags = current.split_once(' ').map(|(_, f)| f).unwrap_or("");
+    Some(if flags.is_empty() {
+        release
+    } else {
+        format!("{release} {flags}")
+    })
+}
+
 /// Load a symbol-bound module image, retrying once with the kernel's vermagic
 /// when the first attempt is rejected over a vermagic mismatch.
 fn init_module_buffer(mut buffer: Vec<u8>, params: &CStr) -> Result<()> {
@@ -435,7 +467,14 @@ fn init_module_buffer(mut buffer: Vec<u8>, params: &CStr) -> Result<()> {
                 None => String::new(),
             };
 
-            let Some(required_vermagic) = extract_required_vermagic(&logs) else {
+            let required_vermagic = extract_required_vermagic(&logs).or_else(|| {
+                let fallback = vermagic_from_osrelease(&buffer);
+                if let Some(ref vm) = fallback {
+                    log::warn!("No vermagic in kernel log; falling back to {vm:?}");
+                }
+                fallback
+            });
+            let Some(required_vermagic) = required_vermagic else {
                 log::error!("Kernel module loading log:\n{}", logs);
                 return Err(first_error).context("init_module failed without vermagic mismatch");
             };

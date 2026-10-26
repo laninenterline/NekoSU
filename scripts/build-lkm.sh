@@ -17,6 +17,16 @@ OUT="$ROOT/out/$KMI"
 : "${KSU_EXPECTED_HASH:?set KSU_EXPECTED_HASH (APK signing cert DER sha256)}"
 
 [ -d "$KDIR" ] || { echo "KDIR not found: $KDIR (run scripts/build-kdir.sh first)"; exit 1; }
+# Match the module vermagic to a device kernel release, e.g. `uname -r`.
+# The ksuinit loader can fix a mismatch from /dev/kmsg, but some OEM kernels
+# do not expose the required "version magic" line, so matching at build time
+# is the reliable option.
+if [ -n "${DEVICE_RELEASE:-}" ]; then
+  mkdir -p "$KDIR/include/generated" "$KDIR/include/config"
+  printf '#define UTS_RELEASE "%s"\n' "$DEVICE_RELEASE" > "$KDIR/include/generated/utsrelease.h"
+  printf '%s' "$DEVICE_RELEASE" > "$KDIR/include/config/kernel.release"
+fi
+
 [ -x "$CLANG_BIN/clang" ] || { echo "clang not found: $CLANG_BIN"; exit 1; }
 
 mkdir -p "$OUT"
