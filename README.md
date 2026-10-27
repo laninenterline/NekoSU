@@ -6,7 +6,8 @@ NekoSU 是一个基于 KernelSU 的 Android Root 管理器分支，**只支持�
 ## 特性
 
 - su 授权、超级用户管理、模块安装/刷写（保留 KernelSU 模块体系）
-- **内嵌内核模块**：`android15-6.6_kernelsu.ko`（按 GKI 6.6.89 源码严格对齐编译）随 `ksud` 打进 APK
+- **内嵌内核模块**：`android14-6.1_kernelsu.ko`、`android15-6.6_kernelsu.ko`（官方 GKI 镜像编译）随 `ksud` 打进 APK；
+  ksud 会按运行内核 release 自动选择对应 KMI 的 ko（6.12/6.18 支持在推进中）
 - **内嵌 SUSFS LKM**：`android15-6.6_susfs_guard_lkm.ko`（[inforcqb/susfs4ksu-lkm](https://github.com/inforcqb/susfs4ksu-lkm) v2.3.0），
   `late-load` 加载完 kernelsu.ko 后自动加载（`expose_proc=1`），无需单独刷模块
 - `ksud late-load` / Jailbreak 路径；模块刷写、SuSFS 设置界面
@@ -24,7 +25,7 @@ manager/          Android 管理器（Kotlin + Compose）
 userspace/ksud/   Rust 用户态守护进程（含内嵌 ko 资源，构建产物不入库）
 kernel/           KernelSU 内核模块源码（GPL-2.0）
 uapi/             内核/用户态共享接口定义
-scripts/          构建脚本
+scripts/          构建脚本（含 scripts/build_kmi.sh：按 KMI 构建 kernelsu.ko + SUSFS ko）
 ```
 
 ## 构建环境

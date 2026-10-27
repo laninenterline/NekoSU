@@ -33,3 +33,12 @@ always-y += compat/syscall_no.h
 
 $(kernelsu-objs): $(KSU_SYSCALL_NO_TARGET)
 $(addprefix $(obj)/,$(kernelsu-objs)): $(KSU_SYSCALL_NO_TARGET)
+
+# Linux 6.12+ resolves hostprog sources relative to $(obj), not $(src); mirror the
+# generator source into the external-module output tree so Kbuild finds it.
+KSU_SYSCALL_NO_SRC_COPY := $(obj)/tools/code_generation/syscall_no/syscall_no.c
+ifeq ($(shell test $(VERSION) -gt 6 -o \( $(VERSION) -eq 6 -a $(PATCHLEVEL) -ge 12 \); echo $$?),0)
+$(KSU_SYSCALL_NO_SRC_COPY): $(KSU_SRC)/tools/code_generation/syscall_no/syscall_no.c
+	@mkdir -p $(dir $@)
+	@cp -f $< $@
+endif

@@ -1,3 +1,6 @@
+ifeq ($(KSU_SKIP_PREINIT),1)
+ccflags-y += -DKSU_NO_PREINIT
+else
 # preinit runner: a static nolibc binary embedded into kernelsu, see preinit/.
 # It is built against the installed UAPI headers of the target kernel
 # (CONFIG_HEADERS_INSTALL, enabled by gki_defconfig).
@@ -51,3 +54,4 @@ $(warning -- $(REPO_NAME): $(KSU_UAPI_INC) not found, preinit disabled)
 ccflags-y += -DKSU_NO_PREINIT
 endif
 
+endif # KSU_SKIP_PREINIT
