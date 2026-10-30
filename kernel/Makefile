@@ -3,7 +3,7 @@ MDIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 ODIR := $(MDIR)
 KMI := $(notdir $(patsubst %/,%,$(KDIR)))
 
-ifeq ($(KMI),android17-6.18)
+ifneq ($(filter android16-6.12 android17-6.18,$(KMI)),)
 KBUILD_ARGS := M=$(MDIR) MO=$(ODIR)
 else
 KBUILD_ARGS := M=$(ODIR) src=$(MDIR)
