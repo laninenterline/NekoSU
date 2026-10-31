@@ -7,6 +7,7 @@ import com.nekosu.KernelVersion
 data class KmiEntry(val kmi: String, val androidN: Int, val major: Int, val minor: Int)
 
 val embeddedKmis = listOf(
+    KmiEntry("android11-5.4", 11, 5, 4),
     KmiEntry("android12-5.10", 12, 5, 10),
     KmiEntry("android13-5.10", 13, 5, 10),
     KmiEntry("android13-5.15", 13, 5, 15),
@@ -37,6 +38,7 @@ fun matchKmi(
 
     val tagAndroid = androidTagRegex.find(release)?.groupValues?.get(1)?.toIntOrNull()
     val sdkAndroid = when {
+        sdk == 30 -> 11
         sdk in 31..32 -> 12
         sdk == 33 -> 13
         sdk == 34 -> 14

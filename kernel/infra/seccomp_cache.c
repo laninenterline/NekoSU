@@ -1,4 +1,8 @@
 #include <linux/version.h>
+
+// seccomp cache exists only on 5.10+ kernels
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+#include <linux/version.h>
 #include <linux/fs.h>
 #include <linux/nsproxy.h>
 #include <linux/sched/task.h>
@@ -63,3 +67,5 @@ void ksu_seccomp_allow_cache(struct seccomp_filter *filter, int nr)
     }
 #endif
 }
+
+#endif

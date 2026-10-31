@@ -19,6 +19,15 @@ export PATH="$CLANG_BIN:$PATH"
 DDK_WORK=${DDK_WORK:-/opt/ddk}
 LOGDIR=${KMI_LOGDIR:-${TMPDIR:-/tmp}/nekosu-kmi}
 mkdir -p "$LOGDIR"
+# Older kernels (< 5.10) do not understand make LLVM=1; use explicit tools.
+KV_MAJOR=$(sed -n 's/^VERSION = //p' "$SRC/Makefile" 2>/dev/null)
+KV_MINOR=$(sed -n 's/^PATCHLEVEL = //p' "$SRC/Makefile" 2>/dev/null)
+if [ -n "$KV_MAJOR" ] && { [ "$KV_MAJOR" -lt 5 ] || { [ "$KV_MAJOR" -eq 5 ] && [ "$KV_MINOR" -lt 10 ]; }; }; then
+  MAKE_TC="CC=clang HOSTCC=gcc LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip"
+else
+  MAKE_TC="LLVM=1 LLVM_IAS=1"
+fi
+
 PB=${DDK_PREBUILTS:-/root/ddk-prebuilts}
 KDIR=${KDIR:-$DDK_WORK/kdir/$T}
 SRC=${SRC:-$DDK_WORK/src/$T}
@@ -103,23 +112,28 @@ rm -f "$ROOT"/kernel/kernelsu.mod.c "$ROOT"/kernel/kernelsu.mod \
 rm -f "$ROOT/out/kmi-$T/compat/syscall_no.h" "$ROOT/out/kmi-$T/kernelsu.mod.c" 2>/dev/null || true
 
 # 4) native host tools
-make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig </dev/null > $LOGDIR/kmi-$T-tools.log 2>&1 || true
-make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 modules_prepare >> $LOGDIR/kmi-$T-tools.log 2>&1 || true
-[ -x "$KDIR/scripts/mod/modpost" ] || make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 scripts >> $LOGDIR/kmi-$T-tools.log 2>&1 || true
+make -C "$KDIR" ARCH=arm64 $MAKE_TC olddefconfig </dev/null > $LOGDIR/kmi-$T-tools.log 2>&1 || true
+make -C "$KDIR" ARCH=arm64 $MAKE_TC modules_prepare >> $LOGDIR/kmi-$T-tools.log 2>&1 || true
+[ -x "$KDIR/scripts/mod/modpost" ] || make -C "$KDIR" ARCH=arm64 $MAKE_TC scripts >> $LOGDIR/kmi-$T-tools.log 2>&1 || true
+
+# External module builds need the generated SELinux headers (flask.h etc.);
+# modules_prepare does not create them.
+[ -f "$KDIR/security/selinux/flask.h" ] || make -C "$KDIR" ARCH=arm64 $MAKE_TC security/selinux/flask.h >> $LOGDIR/kmi-$T-tools.log 2>&1 || true
+[ -f "$KDIR/security/selinux/built-in.a" ] || make -C "$KDIR" ARCH=arm64 $MAKE_TC security/selinux/built-in.a >> $LOGDIR/kmi-$T-tools.log 2>&1 || true
 [ -x "$KDIR/scripts/mod/modpost" ] && [ -x "$KDIR/scripts/basic/fixdep" ] || { echo "FAIL host tools"; tail -20 $LOGDIR/kmi-$T-tools.log; exit 1; }
 
 # 4b) disable BTF module generation (resolve_btfids host tool is not built here;
 # our modules do not need BTF and it would only add an extra host dependency)
 if [ -f "$SRC/scripts/config" ]; then
   "$SRC/scripts/config" --file "$KDIR/.config" -d DEBUG_INFO_BTF -d DEBUG_INFO_BTF_MODULES >/dev/null 2>&1 || true
-  make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 syncconfig </dev/null >/dev/null 2>&1 || true
-  make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig </dev/null >/dev/null 2>&1 || true
+  make -C "$KDIR" ARCH=arm64 $MAKE_TC syncconfig </dev/null >/dev/null 2>&1 || true
+  make -C "$KDIR" ARCH=arm64 $MAKE_TC olddefconfig </dev/null >/dev/null 2>&1 || true
 fi
 
 # 4c) generate kernel headers (asm/unistd_compat_32.h etc. are produced by
 # prepare/headers targets; module builds do not trigger them on their own)
-make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 prepare >> "$LOGDIR/kmi-$T-tools.log" 2>&1 || true
-make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 headers_install INSTALL_HDR_PATH="$KDIR/usr" >> "$LOGDIR/kmi-$T-tools.log" 2>&1 || true
+make -C "$KDIR" ARCH=arm64 $MAKE_TC prepare >> "$LOGDIR/kmi-$T-tools.log" 2>&1 || true
+make -C "$KDIR" ARCH=arm64 $MAKE_TC headers_install INSTALL_HDR_PATH="$KDIR/usr" >> "$LOGDIR/kmi-$T-tools.log" 2>&1 || true
 
 # 5) clean stale artifacts in susfs module source
 rm -rf "$SUSFS_SRC/kernel/modules.order" "$SUSFS_SRC/kernel/Module.symvers" \
@@ -143,10 +157,10 @@ else
 fi
 set +e
 if [ "$NEW_STYLE" = "1" ]; then
-  env "${KSU_ARGS[@]}" make -C "$KDIR" M="$ROOT/kernel" MO="$OUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
+  env "${KSU_ARGS[@]}" make -C "$KDIR" M="$ROOT/kernel" MO="$OUT" ARCH=arm64 $MAKE_TC \
     modules -j"$(nproc)" > $LOGDIR/kmi-$T-ko.log 2>&1
 else
-  env "${KSU_ARGS[@]}" make -C "$KDIR" M="$OUT" src="$ROOT/kernel" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
+  env "${KSU_ARGS[@]}" make -C "$KDIR" M="$OUT" src="$ROOT/kernel" ARCH=arm64 $MAKE_TC \
     modules -j"$(nproc)" > $LOGDIR/kmi-$T-ko.log 2>&1
 fi
 RC=$?; set -e
@@ -168,10 +182,10 @@ cp -f "$KO" "$ROOT/userspace/ksud/bin/aarch64/${T}_kernelsu.ko"
 SOUT="$ROOT/out/susfs-$T"; rm -rf "$SOUT"; mkdir -p "$SOUT"
 set +e
 if [ "$NEW_STYLE" = "1" ]; then
-  make -C "$KDIR" M="$SUSFS_SRC/kernel" MO="$SOUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
+  make -C "$KDIR" M="$SUSFS_SRC/kernel" MO="$SOUT" ARCH=arm64 $MAKE_TC \
     KBUILD_MODPOST_WARN=1 modules -j"$(nproc)" > $LOGDIR/kmi-$T-susfs.log 2>&1
 else
-  make -C "$KDIR" M="$SUSFS_SRC/kernel" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
+  make -C "$KDIR" M="$SUSFS_SRC/kernel" ARCH=arm64 $MAKE_TC \
     KBUILD_MODPOST_WARN=1 modules -j"$(nproc)" \
     CONFIG_DEBUG_INFO_BTF_MODULES= CONFIG_DEBUG_INFO_BTF= > $LOGDIR/kmi-$T-susfs.log 2>&1
 fi

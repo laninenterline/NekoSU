@@ -65,18 +65,46 @@ fn dump_process_info(label: &str) {
     );
 }
 
+/// Directory where the manager imports user-built LKM images (e.g. for
+/// kernel 5.4, which has no unified GKI image and therefore no embedded KO).
+fn custom_lkm_dir(package_name: &str) -> String {
+    format!("/data/data/{package_name}/files/lkm/custom")
+}
+
+/// Read a user-imported KO, rejecting anything that is not an ELF.
+fn read_custom_ko(path: &str) -> Option<Vec<u8>> {
+    let data = std::fs::read(path).ok()?;
+    if data.len() < 64 || &data[..4] != b"\x7fELF" {
+        warn!("custom KO at {path} is not a valid ELF, ignored");
+        return None;
+    }
+    Some(data)
+}
+
 /// Load the embedded SUSFS LKM for the running kernel if SUSFS is not already active.
 ///
 /// SUSFS on GKI is shipped as a separate loadable module; this makes it part of the
 /// manager/ksud bundle so that a temporary-root activation brings SUSFS up as well,
 /// without flashing a separate KernelSU module.
-fn load_embedded_susfs() {
+fn load_susfs_lkm(package_name: &str) {
     // Already present (built-in kernel SUSFS, or loaded earlier)?
     if std::path::Path::new("/proc/susfs_path").exists()
         || std::path::Path::new("/sys/module/susfs_guard_lkm").exists()
     {
-        info!("SUSFS already present, skip embedded SUSFS LKM");
+        info!("SUSFS already present, skip SUSFS LKM");
         return;
+    }
+
+    let custom = format!("{}/susfs_guard_lkm.ko", custom_lkm_dir(package_name));
+    if let Some(data) = read_custom_ko(&custom) {
+        info!("SUSFS LKM: loading custom {custom}");
+        match ksuinit::load_module(&data, cstr!("expose_proc=1")) {
+            Ok(()) => {
+                info!("custom SUSFS LKM loaded successfully");
+                return;
+            }
+            Err(e) => warn!("custom SUSFS LKM failed: {e:#}, falling back to embedded"),
+        }
     }
 
     let kmi = match crate::boot_patch::get_current_kmi() {
@@ -118,10 +146,22 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
         )?;
         info!("Detected KMI: {kmi}");
 
-        // 3. Get kernelsu.ko from embedded assets
-        let ko_name = format!("{kmi}_kernelsu.ko");
-        let ko_data = assets::get_asset(&ko_name)
-            .with_context(|| format!("Failed to get {ko_name} from assets"))?;
+        // 3. Prefer a user-imported custom ko (for kernels without a unified
+        // GKI image, e.g. 5.4), then fall back to the embedded KMI asset.
+        let custom_ko = format!("{}/kernelsu.ko", custom_lkm_dir(package_name));
+        let (ko_data, ko_source) = match read_custom_ko(&custom_ko) {
+            Some(data) => {
+                info!("Using custom kernelsu.ko: {custom_ko}");
+                (data, custom_ko)
+            }
+            None => {
+                let ko_name = format!("{kmi}_kernelsu.ko");
+                let data = assets::get_asset(&ko_name)
+                    .with_context(|| format!("Failed to get {ko_name} from assets"))?;
+                info!("Using embedded {ko_name}");
+                (data.into_owned(), ko_name)
+            }
+        };
 
         // 4. Load kernelsu.ko from memory with manual relocation
         info!("Loading kernelsu.ko for KMI {kmi}...");
@@ -138,12 +178,13 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
             param_str.push_str(&modules);
         }
         let params = CString::new(param_str).context("Invalid module parameters")?;
-        ksuinit::load_module(&ko_data, params.as_c_str()).context("Failed to load kernelsu.ko")?;
+        ksuinit::load_module(&ko_data, params.as_c_str())
+            .with_context(|| format!("Failed to load kernelsu.ko from {ko_source}"))?;
         info!("kernelsu.ko loaded successfully!");
         dump_process_info("after load_module");
     }
 
-    load_embedded_susfs();
+    load_susfs_lkm(package_name);
 
     // We need to reset stdin/stdout/stderr; otherwise, sending file descriptors via cmd transactions
     // will be blocked by SELinux because its fsec->sid is still u:r:su:s0 instead of u:r:ksu:s0.

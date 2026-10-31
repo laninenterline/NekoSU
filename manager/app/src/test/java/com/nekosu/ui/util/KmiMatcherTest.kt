@@ -15,6 +15,12 @@ class KmiMatcherTest {
     }
 
     @Test
+    fun matchesFiveFourKernel() {
+        assertEquals("android11-5.4", matchKmi(KernelVersion(5, 4, 302), "5.4.302-android11-9-gabc", 30)?.kmi)
+        assertEquals("android11-5.4", matchKmi(KernelVersion(5, 4, 210), "5.4.210", 30)?.kmi)
+    }
+
+    @Test
     fun matchesFiveSeriesByReleaseTag() {
         assertEquals("android12-5.10", matchKmi(KernelVersion(5, 10, 252), "5.10.252-android12-9-gabc", 32)?.kmi)
         assertEquals("android13-5.10", matchKmi(KernelVersion(5, 10, 245), "5.10.245-android13-8-gabc", 33)?.kmi)
@@ -30,7 +36,7 @@ class KmiMatcherTest {
 
     @Test
     fun unknownKernelHasNoMatch() {
-        assertNull(matchKmi(KernelVersion(5, 4, 0)))
-        assertNull(matchKmi(KernelVersion(6, 6, 0).copy(major = 7)))
+        assertNull(matchKmi(KernelVersion(4, 14, 0)))
+        assertNull(matchKmi(KernelVersion(7, 0, 0)))
     }
 }

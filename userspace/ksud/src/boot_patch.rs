@@ -97,7 +97,18 @@ mod android {
     fn parse_kmi_from_uname() -> Result<String> {
         let uname = rustix::system::uname();
         let version = uname.release().to_string_lossy();
-        parse_kmi(&version)
+        match parse_kmi(&version) {
+            Ok(kmi) => Ok(kmi),
+            Err(e) => {
+                // Some GKI 5.4 vendor kernels drop the `android11` tag from the
+                // release string. There is exactly one embedded 5.4 variant.
+                if version.contains("5.4.") {
+                    Ok("android11-5.4".to_string())
+                } else {
+                    Err(e)
+                }
+            }
+        }
     }
 
     fn parse_kmi_from_modules() -> Result<String> {

@@ -6,8 +6,8 @@ NekoSU 是一个基于 KernelSU 的 Android Root 管理器分支，**只支持�
 ## 特性
 
 - su 授权、超级用户管理、模块安装/刷写（保留 KernelSU 模块体系）
-- **内嵌内核模块**：`android12-5.10` / `android13-5.10` / `android13-5.15` / `android14-5.15` / `android14-6.1` / `android15-6.6` / `android16-6.12` / `android17-6.18` 的 `kernelsu.ko`（官方 GKI 镜像编译）随 `ksud` 打进 APK；
-  ksud 会按运行内核 release 自动选择对应 KMI 的 ko。SUSFS LKM 覆盖 5.10 / 5.15 / 6.1 / 6.6 / 6.12 / 6.18。
+- **内嵌内核模块**：`android11-5.4` / `android12-5.10` / `android13-5.10` / `android13-5.15` / `android14-5.15` / `android14-6.1` / `android15-6.6` / `android16-6.12` / `android17-6.18` 的 `kernelsu.ko`（官方 GKI 镜像编译）随 `ksud` 打进 APK；
+  ksud 会按运行内核 release 自动选择对应 KMI 的 ko。SUSFS LKM 覆盖 5.10 / 5.15 / 6.1 / 6.6 / 6.12 / 6.18（5.4 暂不带 SUSFS LKM）。
 - **内嵌 SUSFS LKM**：`android15-6.6_susfs_guard_lkm.ko`（[inforcqb/susfs4ksu-lkm](https://github.com/inforcqb/susfs4ksu-lkm) v2.3.0），
   `late-load` 加载完 kernelsu.ko 后自动加载（`expose_proc=1`），无需单独刷模块
 - `ksud late-load` / Jailbreak 路径；模块刷写、SuSFS 设置界面
@@ -87,6 +87,23 @@ sha256sum cert.der | cut -d' ' -f1
 当前仓库开发用的 debug 证书值：`size=744`、`hash=7897a4ecab0ed3e82f03bf8d5e3238b254cebce285385099bd29151b3aaf327c`。
 发布版本请使用自己的 release keystore，重新计算并重编 LKM，否则内核不会信任该 APK。
 
+## 自定义 LKM（无内置 KMI 的内核）
+
+GKI 5.4 / 5.10 / 5.15 / 6.1 / 6.6 / 6.12 / 6.18 均已内置（5.4 为基于 AOSP android11-5.4 GKI 的 best-effort 预编译，不带 SUSFS）。
+若内核 ABI 不匹配或没有对应内置 KMI（如非 GKI 厂商内核），可用自己设备的内核编译后导入：
+
+```bash
+# 准备你的内核源码与已配置好的输出目录（O= 目录）
+SKIP_PREBUILT_FETCH=1 KDIR=/path/to/kernel-out SRC=/path/to/kernel-src \
+  KSU_EXPECTED_SIZE=<证书DER大小> KSU_EXPECTED_HASH=<证书DER sha256> \
+  scripts/build_kmi.sh android11-5.4
+# 产物：userspace/ksud/bin/aarch64/android11-5.4_kernelsu.ko 与 ..._susfs_guard_lkm.ko
+```
+
+然后在管理器 **设置 → 工具 → 自定义 LKM** 导入这两个文件；ksud 的 late-load 会优先加载自定义 KO，没有时才回退内置资产。
+
+> 说明：KernelSU 官方支持 5.10+；5.4 的内核侧代码兼容性为 best-effort，编译失败时可能需要按内核版本做 backport。
+
 ## SUSFS（LKM）
 
 SUSFS 以可加载模块形式提供，来源 [inforcqb/susfs4ksu-lkm](https://github.com/inforcqb/susfs4ksu-lkm)（GPL-2.0），
@@ -107,7 +124,7 @@ SUSFS 以可加载模块形式提供，来源 [inforcqb/susfs4ksu-lkm](https://g
 - 仅 arm64-v8a
 - 仅临时 root：每次重启后需要重新触发加载（Jailbreak / 漏洞工具）
 - 内核符号通过 `/proc/kallsyms` 绑定，需 root 上下文；设备内核缺少符号时会加载失败
-- 支持 GKI 内核：5.10 / 5.15 / 6.1 / 6.6 / 6.12 / 6.18（8 个 KMI）；非 GKI（厂商自编内核）仍需自行编译
+- 支持 GKI 内核：5.4（best-effort，基于 AOSP android11-5.4 GKI 5.4.302）/ 5.10 / 5.15 / 6.1 / 6.6 / 6.12 / 6.18（9 个 KMI）；非 GKI（厂商自编内核）仍需自行编译或使用「自定义 LKM」导入
 
 ## 管理器签名证书限制
 

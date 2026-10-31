@@ -79,6 +79,7 @@ import com.nekosu.ui.overscroll.rememberCustomOverscrollFactory
 import com.nekosu.ui.screen.AppProfileScreen
 import com.nekosu.ui.screen.BlockModulesScreen
 import com.nekosu.ui.screen.AppProfileTemplateScreen
+import com.nekosu.ui.screen.CustomLkmScreen
 import com.nekosu.ui.screen.DynamicManagerScreen
 import com.nekosu.ui.screen.ExecuteModuleActionScreen
 import com.nekosu.ui.screen.FlashIt
@@ -581,6 +582,17 @@ fun NavContainer(
                     useBlur = useBlur,
                 ) {
                     DynamicManagerScreen()
+                }
+            }
+            entry<Route.CustomLkm>(swipeDismiss = swipeBackDirection) {
+                ManagerNavEntry(
+                    interceptPredictiveBack = interceptPredictiveBack,
+                    onBack = onBack,
+                    themeConfig = themeConfig,
+                    backgroundRenderState = backgroundRenderState,
+                    useBlur = useBlur,
+                ) {
+                    CustomLkmScreen()
                 }
             }
             entry<Route.SettingsSearch>(swipeDismiss = swipeBackDirection) {
