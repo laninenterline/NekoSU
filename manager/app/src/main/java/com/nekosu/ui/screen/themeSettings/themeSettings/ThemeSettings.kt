@@ -528,18 +528,6 @@ private fun AppearanceSettings(
     val navigator = LocalNavigator.current
     SegmentedColumn(title = stringResource(R.string.appearance_settings)) {
         item {
-            // 应用图标
-            SettingsJumpPageWidget(
-                icon = Icons.TwoTone.Image,
-                title = stringResource(R.string.app_icon_title),
-                description = stringResource(R.string.app_icon_summary),
-                onClick = {
-                    navigator.push(Route.AppIcon)
-                },
-            )
-        }
-
-        item {
             // 语言设置
             LanguageSetting(state = state, viewModel = viewModel)
         }
@@ -729,16 +717,16 @@ private fun CustomizationSettings(
     homeViewModel: HomeViewModel,
     moduleViewModel: ModuleViewModel,
 ) {
+    val navigator = LocalNavigator.current
     SegmentedColumn(title = stringResource(R.string.custom_settings)) {
         item {
-            // 图标切换
-            SettingsSwitchWidget(
+            // 应用图标（替代原来的开关，进入后可直接替换）
+            SettingsJumpPageWidget(
                 icon = Icons.TwoTone.Android,
-                title = stringResource(R.string.icon_switch_title),
-                description = stringResource(R.string.icon_switch_summary),
-                checked = settingsUiState.useAltIcon,
-                onCheckedChange = { enabled ->
-                    settingsViewModel.dispatch(SettingsUiAction.SetAlternateIcon(enabled))
+                title = stringResource(R.string.app_icon_title),
+                description = stringResource(R.string.app_icon_summary),
+                onClick = {
+                    navigator.push(Route.AppIcon)
                 },
             )
         }
