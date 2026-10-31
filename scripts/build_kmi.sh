@@ -95,6 +95,11 @@ if [ -f "$SRC/scripts/config" ]; then
   make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig </dev/null >/dev/null 2>&1 || true
 fi
 
+# 4c) generate kernel headers (asm/unistd_compat_32.h etc. are produced by
+# prepare/headers targets; module builds do not trigger them on their own)
+make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 prepare >> "$LOGDIR/kmi-$T-tools.log" 2>&1 || true
+make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 headers_install INSTALL_HDR_PATH="$KDIR/usr" >> "$LOGDIR/kmi-$T-tools.log" 2>&1 || true
+
 # 5) clean stale artifacts in susfs module source
 rm -rf "$SUSFS_SRC/kernel/modules.order" "$SUSFS_SRC/kernel/Module.symvers" \
        "$SUSFS_SRC/kernel/.tmp_versions" "$SUSFS_SRC/kernel/.module-common.o" 2>/dev/null || true

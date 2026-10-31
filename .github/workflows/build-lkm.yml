@@ -40,6 +40,7 @@ jobs:
       DDK_PREBUILTS: /home/runner/ddk-prebuilts
       DDK_WORK: /home/runner/ddk-work
       KMI_LOGDIR: /home/runner/kmi-logs
+      SUSFS_SRC: /home/runner/susfs-lkm-src
     steps:
       - uses: actions/checkout@v4
 
@@ -64,6 +65,10 @@ jobs:
           cd "$DDK_PREBUILTS"
           git lfs install --local
           # scripts/build_kmi.sh pulls only the requested KMI images on demand
+
+      - name: Clone SUSFS LKM source
+        run: |
+          git clone --depth 1 https://github.com/inforcqb/susfs4ksu-lkm.git "$SUSFS_SRC"
 
       - name: Build each KMI
         run: |
