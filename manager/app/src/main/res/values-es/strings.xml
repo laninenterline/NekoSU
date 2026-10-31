@@ -302,7 +302,6 @@
     <string name="dynamic_manager_disabled_success">Gestor dinamico desactivado</string>
     <string name="dynamic_manager_clear_failed">Fallo al limpiar el gestor dinamico</string>
     <string name="home_meta_module_implement">Implementación de modulo meta</string>
-    <string name="about_app_icon"><![CDATA[Todos los iconos poseen derechos reservados y su copyright es propiedad de %1$s]]></string>
     <string name="settings_mode_default">Por Defecto</string>
     <string name="theme_settings">Ajustes del Tema</string>
     <string name="home_card_icons">Mostrar los iconos en tarjetas de navegación</string>

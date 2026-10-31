@@ -516,7 +516,6 @@
     <string name="susfs_enable_config">Menadżer SUSFS</string>
     <string name="susfs_enable_config_summary">Włącz wbudowany menadżer SUSFS. Może konfliktować z innymi modułami.</string>
     <string name="susfs_config_disable_warning">Wbudowany menadżer SUSFS jest wyłączony. Włącz go lub zainstaluj zewnętrzny moduł, aby używać funkcji SUSFS.</string>
-    <string name="about_app_icon"><![CDATA[Wszystkie prawa do ikon są ZASTRZEŻONE, a prawa autorskie są trzymane przez %1$s]]></string>
     <string name="settings_soft_reboot">Łagodny restart zamiast ponownego uruchomienia</string>
     <string name="settings_soft_reboot_summary">Użyj łagodnego restartu zamiast pełnego ponownego uruchomienia podczas instalacji, aktualizacji oraz włączania i wyłączania modułów.</string>
     <string name="advanced_options">Opcje Zaawansowane</string>

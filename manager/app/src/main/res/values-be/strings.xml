@@ -549,7 +549,6 @@
     <string name="settings_pager_gesture_native">Па змаўчанні</string>
     <string name="settings_pager_gesture_cross_axis">Папярочная вось</string>
     <string name="settings_pager_gesture_ios_like">Як у iOS</string>
-    <string name="about_app_icon"><![CDATA[Усе правы на значкі абаронены, а аўтарскае права належыць %1$s]]></string>
     <string name="both_kernel_and_module_files">Уваходныя zip-архівы змяшчаюць як AnyKernel3, так і модулі</string>
     <string name="more_than_one_kernel_file">Уваходныя файлы ўтрымліваюць больш за 1 файл AnyKernel3</string>
     <string name="module_shortcut_copy_scheme">Капіяваць URL-схему</string>

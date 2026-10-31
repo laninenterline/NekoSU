@@ -63,7 +63,6 @@
     <string name="reboot_download">Restartuj u režim preuzimanja</string>
     <string name="reboot_edl">Restartuj u EDL</string>
     <string name="about">O</string>
-    <string name="about_app_icon"><![CDATA[Sva Prava na Ikone su Zaštićena Zadržana i autorska prava prava posudeju %1$s]]></string>
     <string name="get_source_code">Proveri izvorni kod</string>
     <string name="get_source_code_detail">Proveri izvorni kod na GitHub</string>
     <string name="join_telegram_group">Pridruži se zajednici</string>

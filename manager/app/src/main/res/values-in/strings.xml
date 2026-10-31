@@ -549,7 +549,6 @@
     <string name="settings_pager_gesture_ios_like">Seperti iOS</string>
     <string name="settings_enable_swipe_dismiss">Gestur geser untuk kembali</string>
     <string name="settings_pager_gesture_cross_axis">Lintas sumbu</string>
-    <string name="about_app_icon"><![CDATA[Seluruh hak atas ikon dilindungi dan hak cipta dimiliki oleh %1$s]]></string>
     <string name="both_kernel_and_module_files">File ZIP masukan berisi anykernel3 dan modul sekaligus</string>
     <string name="more_than_one_kernel_file">Ditemukan lebih dari 1 file anykernel3 dalam file masukan</string>
     <string name="module_shortcut_copy_scheme">Salin skema URL</string>

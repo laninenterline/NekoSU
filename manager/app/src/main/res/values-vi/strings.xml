@@ -397,7 +397,6 @@
     <string name="settings_soft_reboot">Khởi động lại mềm thay vì khởi động lại</string>
     <string name="allow_shell_summary">Luôn cho phép adb shell gọi lệnh SU. Không bật cái này trừ khi thực sự cần thiết.</string>
     <string name="sulog_drop_count">%s mất</string>
-    <string name="about_app_icon"><![CDATA[Các biểu tượng đều ĐƯỢC BẢO LƯU MỌI QUYỀN và bản quyền thuộc về %1$s]]></string>
     <string name="home_learn_kernelsu_url">https://kernelsu.org/vi_VN/guide/what-is-kernelsu.html</string>
     <string name="install_force_backup">Sao lưu dưới dạng image gốc</string>
     <string name="install_force_backup_summary">Hãy đảm bảo boot image mà bạn chọn là một image gốc</string>

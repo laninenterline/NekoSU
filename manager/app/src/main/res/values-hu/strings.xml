@@ -553,6 +553,5 @@
     <string name="module_shortcut_scheme_copied">Link kimásolva a vágólapra</string>
     <string name="module_shortcut_copy_scheme">Link másolása a vágólapra</string>
     <string name="both_kernel_and_module_files">Anykernel3 zip tartalmaz a kernel mellett modult is</string>
-    <string name="about_app_icon"><![CDATA[Az ikonokra MINDEN JOG FENNTARTVA, továbbá a szerzői jogok %1$s tulajdonát képezik]]></string>
     <string name="more_than_one_kernel_file">Több anykernel3 fájl található a kiválasztásban</string>
 </resources>
