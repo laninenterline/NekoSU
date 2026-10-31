@@ -37,9 +37,9 @@ jobs:
       KSU_EXPECTED_SIZE: ${{ inputs.expected_size || secrets.KSU_EXPECTED_SIZE }}
       KSU_EXPECTED_HASH: ${{ inputs.expected_hash || secrets.KSU_EXPECTED_HASH }}
       CLANG_BIN: /usr/lib/llvm-18/bin
-      DDK_PREBUILTS: ${{ runner.temp }}/ddk-prebuilts
-      DDK_WORK: ${{ runner.temp }}/ddk-work
-      KMI_LOGDIR: ${{ runner.temp }}/kmi-logs
+      DDK_PREBUILTS: /home/runner/ddk-prebuilts
+      DDK_WORK: /home/runner/ddk-work
+      KMI_LOGDIR: /home/runner/kmi-logs
     steps:
       - uses: actions/checkout@v4
 
