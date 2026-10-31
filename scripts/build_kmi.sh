@@ -16,9 +16,12 @@ T=${1:?usage: $0 <kmi>  e.g. android15-6.6}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 CLANG_BIN=${CLANG_BIN:-/usr/lib/llvm-18/bin}
 export PATH="$CLANG_BIN:$PATH"
+DDK_WORK=${DDK_WORK:-/opt/ddk}
+LOGDIR=${KMI_LOGDIR:-${TMPDIR:-/tmp}/nekosu-kmi}
+mkdir -p "$LOGDIR"
 PB=${DDK_PREBUILTS:-/root/ddk-prebuilts}
-KDIR=${KDIR:-/opt/ddk/kdir/$T}
-SRC=${SRC:-/opt/ddk/src/$T}
+KDIR=${KDIR:-$DDK_WORK/kdir/$T}
+SRC=${SRC:-$DDK_WORK/src/$T}
 SUSFS_SRC=${SUSFS_SRC:-/root/susfs-lkm-src}
 SIZE=${KSU_EXPECTED_SIZE:?set KSU_EXPECTED_SIZE}
 HASH=${KSU_EXPECTED_HASH:?set KSU_EXPECTED_HASH}
@@ -74,10 +77,10 @@ PY
 fi
 
 # 4) native host tools
-make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig </dev/null > /root/kmi-$T-tools.log 2>&1 || true
-make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 modules_prepare >> /root/kmi-$T-tools.log 2>&1 || true
-[ -x "$KDIR/scripts/mod/modpost" ] || make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 scripts >> /root/kmi-$T-tools.log 2>&1 || true
-[ -x "$KDIR/scripts/mod/modpost" ] && [ -x "$KDIR/scripts/basic/fixdep" ] || { echo "FAIL host tools"; tail -20 /root/kmi-$T-tools.log; exit 1; }
+make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig </dev/null > $LOGDIR/kmi-$T-tools.log 2>&1 || true
+make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 modules_prepare >> $LOGDIR/kmi-$T-tools.log 2>&1 || true
+[ -x "$KDIR/scripts/mod/modpost" ] || make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 scripts >> $LOGDIR/kmi-$T-tools.log 2>&1 || true
+[ -x "$KDIR/scripts/mod/modpost" ] && [ -x "$KDIR/scripts/basic/fixdep" ] || { echo "FAIL host tools"; tail -20 $LOGDIR/kmi-$T-tools.log; exit 1; }
 
 # 4b) disable BTF module generation (resolve_btfids host tool is not built here;
 # our modules do not need BTF and it would only add an extra host dependency)
@@ -94,7 +97,8 @@ rm -rf "$SUSFS_SRC/kernel/modules.order" "$SUSFS_SRC/kernel/Module.symvers" \
 
 # 6) build kernelsu.ko (empty Module.symvers => empty __versions, loader binds via kallsyms)
 cd "$ROOT"
-cp -f "$KDIR/Module.symvers" /root/Module.symvers.full
+SYMVERS_BAK=$(mktemp "${TMPDIR:-/tmp}/nekosu-symvers.XXXXXX")
+cp -f "$KDIR/Module.symvers" "$SYMVERS_BAK"
 : > "$KDIR/Module.symvers"
 OUT="$ROOT/out/kmi-$T"; rm -rf "$OUT"; mkdir -p "$OUT"
 KSU_ARGS=(CONFIG_KSU=m CONFIG_KSU_TRACEPOINT_HOOK=y CONFIG_KSU_MULTI_MANAGER_SUPPORT=y
@@ -109,14 +113,14 @@ fi
 set +e
 if [ "$NEW_STYLE" = "1" ]; then
   env "${KSU_ARGS[@]}" make -C "$KDIR" M="$ROOT/kernel" MO="$OUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
-    modules -j"$(nproc)" > /root/kmi-$T-ko.log 2>&1
+    modules -j"$(nproc)" > $LOGDIR/kmi-$T-ko.log 2>&1
 else
   env "${KSU_ARGS[@]}" make -C "$KDIR" M="$OUT" src="$ROOT/kernel" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
-    modules -j"$(nproc)" > /root/kmi-$T-ko.log 2>&1
+    modules -j"$(nproc)" > $LOGDIR/kmi-$T-ko.log 2>&1
 fi
 RC=$?; set -e
-cp -f /root/Module.symvers.full "$KDIR/Module.symvers"
-if [ $RC -ne 0 ]; then echo "FAIL kernelsu ($T)"; grep -E "error:|fatal error" /root/kmi-$T-ko.log | head -8; tail -5 /root/kmi-$T-ko.log; exit 1; fi
+cp -f "$SYMVERS_BAK" "$KDIR/Module.symvers"
+if [ $RC -ne 0 ]; then echo "FAIL kernelsu ($T)"; grep -E "error:|fatal error" $LOGDIR/kmi-$T-ko.log | head -8; tail -5 $LOGDIR/kmi-$T-ko.log; exit 1; fi
 KO=""
 for f in "$ROOT/kernel/kernelsu.ko" "$OUT/kernelsu.ko"; do
   [ -f "$f" ] && { KO="$f"; break; }
@@ -134,15 +138,15 @@ SOUT="$ROOT/out/susfs-$T"; rm -rf "$SOUT"; mkdir -p "$SOUT"
 set +e
 if [ "$NEW_STYLE" = "1" ]; then
   make -C "$KDIR" M="$SUSFS_SRC/kernel" MO="$SOUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
-    KBUILD_MODPOST_WARN=1 modules -j"$(nproc)" > /root/kmi-$T-susfs.log 2>&1
+    KBUILD_MODPOST_WARN=1 modules -j"$(nproc)" > $LOGDIR/kmi-$T-susfs.log 2>&1
 else
   make -C "$KDIR" M="$SUSFS_SRC/kernel" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
     KBUILD_MODPOST_WARN=1 modules -j"$(nproc)" \
-    CONFIG_DEBUG_INFO_BTF_MODULES= CONFIG_DEBUG_INFO_BTF= > /root/kmi-$T-susfs.log 2>&1
+    CONFIG_DEBUG_INFO_BTF_MODULES= CONFIG_DEBUG_INFO_BTF= > $LOGDIR/kmi-$T-susfs.log 2>&1
 fi
 RC=$?; set -e
 if [ $RC -ne 0 ]; then
-  echo "WARN susfs ($T) failed"; grep -E "error:|fatal error" /root/kmi-$T-susfs.log | head -8
+  echo "WARN susfs ($T) failed"; grep -E "error:|fatal error" $LOGDIR/kmi-$T-susfs.log | head -8
 else
   SKO=""
   for f in "$SOUT/susfs_guard_lkm.ko" "$SUSFS_SRC/kernel/susfs_guard_lkm.ko"; do
