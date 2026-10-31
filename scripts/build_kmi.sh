@@ -75,23 +75,30 @@ for tree in "$KDIR" "$SRC"; do
   done < <(find "$tree/scripts" "$tree/tools" -type f \( -name '*.o' -o -perm -111 \) 2>/dev/null)
 done
 
-# 3) 6.12 needs a modpost fix: empty __version_ext_names emitted as "= ;"
-if [ "$NEW_STYLE" = "1" ] && grep -q '__section(\\"__version_ext_names\\") =\\n");' "$SRC/scripts/mod/modpost.c" 2>/dev/null; then :; fi
-if [ "$NEW_STYLE" = "1" ] && grep -q 'buf_printf(b, ";\\n");' "$SRC/scripts/mod/modpost.c" 2>/dev/null; then
+# 3) 6.12 modpost: with no unresolved symbols it emits
+#      __used __section("__version_ext_names") =
+#      ;
+#    which is invalid C. Emit `= ""` so the empty case is valid and symbol
+#    names still concatenate as adjacent string literals.
+if [ "$NEW_STYLE" = "1" ]; then
   python3 - "$SRC/scripts/mod/modpost.c" <<'PY'
 import sys
-p = sys.argv[1]; s = open(p).read()
-if '____version_ext_names[]\n"' in s and 'buf_printf(b, "{\\n");' not in s.split('__version_ext_names')[1][:400]:
-    i = s.index('____version_ext_names')
-    head, tail = s[:i], s[i:]
-    tail = tail.replace('buf_printf(b, "__used __section(\\"__version_ext_names\\") =\\n");',
-                        'buf_printf(b, "__used __section(\\"__version_ext_names\\") =\\n");\n\tbuf_printf(b, "{\\n");', 1)
-    tail = tail.replace('buf_printf(b, "\\t\\"%s\\\\0\\"\\n", s->name);\n\t}\n\tbuf_printf(b, ";\\n");',
-                        'buf_printf(b, "\\t\\"%s\\\\0\\"\\n", s->name);\n\t}\n\tbuf_printf(b, "};\\n");', 1)
-    open(p, "w").write(head + tail)
+p = sys.argv[1]
+s = open(p).read()
+old = 'buf_printf(b, "__used __section(\\"__version_ext_names\\") =\\n");'
+new = 'buf_printf(b, "__used __section(\\"__version_ext_names\\") = \\"\\"\\n");'
+if old in s:
+    open(p, "w").write(s.replace(old, new, 1))
     print("patched modpost.c")
+else:
+    print("modpost.c already patched or format changed")
 PY
 fi
+
+# clean stale in-tree generated module artifacts from previous manual builds
+rm -f "$ROOT"/kernel/kernelsu.mod.c "$ROOT"/kernel/kernelsu.mod \
+      "$ROOT"/kernel/kernelsu.o "$ROOT"/kernel/kernelsu.ko \
+      "$ROOT"/kernel/modules.order "$ROOT"/kernel/.module-common.o 2>/dev/null || true
 
 # 4) native host tools
 make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig </dev/null > $LOGDIR/kmi-$T-tools.log 2>&1 || true
