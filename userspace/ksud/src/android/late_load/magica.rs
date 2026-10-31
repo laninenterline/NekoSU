@@ -196,10 +196,48 @@ fn connect_to_device(port: u16) -> Result<ADBTcpDevice> {
     bail!("Failed to connect to ADB device after {MAX_RETRIES} attempts")
 }
 
-pub fn run(port: u16, package_name: &String, allow_shell: bool) -> Result<()> {
-    enable_adb_root(port)?;
 
-    let mut device = connect_to_device(port)?;
+/// Append a Magica diagnostic line to the manager-provided log file (best effort).
+/// The manager sets KSU_MAGICA_LOG when it launches the bootstrap, so a failed
+/// attempt leaves a readable trace even if the process is later killed.
+fn mlog(message: &str) {
+    log::info!("{message}");
+    let Ok(path) = std::env::var("KSU_MAGICA_LOG") else {
+        return;
+    };
+    if path.is_empty() {
+        return;
+    }
+    let ts = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let line = format!("[{ts}] {message}\n");
+    let _ = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .and_then(|mut f| {
+            use std::io::Write;
+            f.write_all(line.as_bytes())
+        });
+}
+
+pub fn run(port: u16, package_name: &String, allow_shell: bool) -> Result<()> {
+    mlog(&format!("magica run start (port={port}, pkg={package_name})"));
+    if let Err(e) = enable_adb_root(port) {
+        mlog(&format!("enable_adb_root failed: {e:#}"));
+        return Err(e);
+    }
+    mlog("adb root enabled, connecting to device");
+
+    let mut device = match connect_to_device(port) {
+        Ok(d) => d,
+        Err(e) => {
+            mlog(&format!("connect_to_device failed: {e:#}"));
+            return Err(e);
+        }
+    };
 
     let self_path = std::env::current_exe().context("Failed to get self exe path")?;
 
@@ -221,10 +259,14 @@ pub fn run(port: u16, package_name: &String, allow_shell: bool) -> Result<()> {
         info!("adb shell finished with error (may be expected): {e}");
     }
     if !stdout.is_empty() {
-        info!("stdout: {}", String::from_utf8_lossy(&stdout));
+        let text = String::from_utf8_lossy(&stdout);
+        info!("stdout: {text}");
+        mlog(&format!("post-magica stdout: {text}"));
     }
     if !stderr.is_empty() {
-        info!("stderr: {}", String::from_utf8_lossy(&stderr));
+        let text = String::from_utf8_lossy(&stderr);
+        info!("stderr: {text}");
+        mlog(&format!("post-magica stderr: {text}"));
     }
 
     Ok(())

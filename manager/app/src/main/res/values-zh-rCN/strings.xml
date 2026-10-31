@@ -679,4 +679,4 @@
     <string name="magica_compat_continue">仍要尝试</string>
     <string name="magica_manual_title">手动 late-load</string>
     <string name="magica_blocked_message">检测到上次一键越狱后设备发生了重启，已停用一键越狱以避免反复重启。\n\n手动方案：用你惯用的方式获得临时 root，然后执行：\n\nksud late-load --allow-shell --package-name %1$s</string>
-</resources>
+    <string name="export_problem_log">导出问题日志</string>\n    <string name="export_problem_log_summary">单独保存越狱失败日志和设备信息</string>\n</resources>

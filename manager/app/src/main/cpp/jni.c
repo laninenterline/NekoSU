@@ -637,7 +637,7 @@ NativeBridgeNP(getManagersList, jobject) {
     return obj;
 }
 
-int fork_dont_care_and_exec_ksud(const char *path, const char *pkg) {
+int fork_dont_care_and_exec_ksud(const char *path, const char *pkg, const char *log_path) {
     int pid = fork();
     if (pid < 0) {
         PLOGE("fork");
@@ -667,6 +667,9 @@ int fork_dont_care_and_exec_ksud(const char *path, const char *pkg) {
         _exit(0);
     }
 
+    if (log_path && log_path[0]) {
+        setenv("KSU_MAGICA_LOG", log_path, 1);
+    }
     execl(path, "ksud", "late-load", "--magica", "5555","--package-name", pkg, nullptr);
     PLOGE("exec magica");
     _exit(1);
@@ -675,11 +678,13 @@ int fork_dont_care_and_exec_ksud(const char *path, const char *pkg) {
 JNIEXPORT void JNICALL
 Java_com_nekosu_magica_AppZygotePreload_forkDontCareAndExecKsud(JNIEnv *env,
                                                                            jclass clazz,
-                                                                           jstring ksud_path, jstring pkg_name) {
+                                                                           jstring ksud_path, jstring pkg_name,
+                                                                           jstring log_path) {
     const char *path = GetEnvironment()->GetStringUTFChars(env, ksud_path, nullptr);
     const char *pkg = GetEnvironment()->GetStringUTFChars(env, pkg_name, nullptr);
-    LOGD("executing magica %s (pkg %s)", path, pkg);
-    fork_dont_care_and_exec_ksud(path, pkg);
+    const char *log = GetEnvironment()->GetStringUTFChars(env, log_path, nullptr);
+    LOGD("executing magica %s (pkg %s, log %s)", path, pkg, log);
+    fork_dont_care_and_exec_ksud(path, pkg, log);
     GetEnvironment()->ReleaseStringUTFChars(env, ksud_path, path);
     GetEnvironment()->ReleaseStringUTFChars(env, pkg_name, pkg);
 }

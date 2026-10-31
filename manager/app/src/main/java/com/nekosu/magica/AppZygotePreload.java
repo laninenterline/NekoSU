@@ -13,7 +13,7 @@ import java.io.File;
 public class AppZygotePreload implements ZygotePreload {
     public static final String TAG = "KernelSUMagica";
 
-    private static native void forkDontCareAndExecKsud(String ksudPath, String packageName);
+    private static native void forkDontCareAndExecKsud(String ksudPath, String packageName, String logPath);
 
     @Override
     public void doPreload(@NonNull ApplicationInfo appInfo) {
@@ -21,7 +21,8 @@ public class AppZygotePreload implements ZygotePreload {
         try {
             System.loadLibrary("kernelsu");
             Log.d(TAG, "executing magica ...");
-            forkDontCareAndExecKsud(f.getAbsolutePath(), appInfo.packageName);
+            File logFile = new File(appInfo.dataDir, "files/magica_ksud.log");
+            forkDontCareAndExecKsud(f.getAbsolutePath(), appInfo.packageName, logFile.getAbsolutePath());
         } catch (Throwable t) {
             Log.e(TAG, "failed to late load", t);
         }

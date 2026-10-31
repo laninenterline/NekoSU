@@ -683,4 +683,4 @@
     <string name="magica_compat_continue">Try anyway</string>
     <string name="magica_manual_title">Manual late-load</string>
     <string name="magica_blocked_message">A previous jailbreak attempt appears to have rebooted this device. One-tap jailbreak is now disabled to prevent reboot loops.\n\nManual option: get temporary root with your usual exploit, then run:\n\nksud late-load --allow-shell --package-name %1$s</string>
-</resources>
+    <string name="export_problem_log">Export problem log</string>\n    <string name="export_problem_log_summary">Save the dedicated jailbreak failure log together with device info</string>\n</resources>

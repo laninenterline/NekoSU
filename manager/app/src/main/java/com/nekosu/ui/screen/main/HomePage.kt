@@ -97,6 +97,7 @@ import com.nekosu.domain.model.ManagerUpdateChannel
 import com.nekosu.domain.model.ManagerUpdateInfo
 import com.nekosu.domain.usecase.EnqueueManagerUpdateUseCase
 import com.nekosu.magica.MagicaCompat
+import com.nekosu.magica.MagicaFailureLog
 import com.nekosu.magica.MagicaService
 import com.nekosu.ui.component.KsuIsValid
 import com.nekosu.ui.component.SwipeableSnackbarHost
@@ -140,10 +141,16 @@ fun HomePage(
     var showMagicaConfirm by remember { mutableStateOf(false) }
     var showMagicaBlocked by remember { mutableStateOf(false) }
     LaunchedEffect(uiState.systemStatus.isRootAvailable) {
-        if (uiState.systemStatus.isRootAvailable) MagicaCompat.clear(context)
+        if (uiState.systemStatus.isRootAvailable) {
+            MagicaCompat.clear(context)
+            MagicaFailureLog.recordRootAvailable(context)
+        }
     }
     LaunchedEffect(Unit) {
-        if (MagicaCompat.consumeRebootFlag(context)) showMagicaBlocked = true
+        if (MagicaCompat.consumeRebootFlag(context)) {
+            MagicaFailureLog.recordRebootDetected(context)
+            showMagicaBlocked = true
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -336,6 +343,7 @@ fun HomePage(
                         TextButton(onClick = {
                             showMagicaConfirm = false
                             MagicaCompat.markAttempt(context)
+                            MagicaFailureLog.recordAttempt(context)
                             loadingDialog.showLoading()
                             context.startService(Intent(context, MagicaService::class.java))
                             // Manager will be force-stopped and restarted by late-load on success.
@@ -344,6 +352,7 @@ fun HomePage(
                                 delay(30_000.milliseconds)
                                 withContext(Dispatchers.Main) {
                                     loadingDialog.hide()
+                                    MagicaFailureLog.recordTimeout(context)
                                     Toast.makeText(
                                         context,
                                         R.string.jailbreak_timeout,

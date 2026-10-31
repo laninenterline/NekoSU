@@ -53,6 +53,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.MaterialTheme
+import com.nekosu.magica.MagicaFailureLog
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -153,6 +154,21 @@ fun SettingsPage(bottomPadding: Dp) {
         val logSaved = stringResource(R.string.log_saved)
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
+        val exportProblemLogLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("text/plain"),
+        ) { uri: Uri? ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            scope.launch(Dispatchers.IO) {
+                loadingDialog.show()
+                runCatching {
+                    context.contentResolver.openOutputStream(uri)?.use { output ->
+                        output.write(buildProblemLog(context).toByteArray())
+                    }
+                }
+                loadingDialog.hide()
+                snackBarHost.showReplacingSnackbar(logSaved)
+            }
+        }
         val exportBugreportLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument("application/gzip"),
         ) { uri: Uri? ->
@@ -482,6 +498,19 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
+                        item {
+                            SettingsBaseWidget(
+                                icon = Icons.AutoMirrored.TwoTone.Article,
+                                title = stringResource(R.string.export_problem_log),
+                                description = stringResource(R.string.export_problem_log_summary),
+                                onClick = {
+                                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm")
+                                    val current = LocalDateTime.now().format(formatter)
+                                    exportProblemLogLauncher.launch("NekoSU_problem_$current.txt")
+                                },
+                            )
+                        }
+
                         if (homeState.systemStatus.isFullFeatured) {
                             item {
                                 SettingsJumpPageWidget(
@@ -671,3 +700,20 @@ private fun TopBar(
         scrollBehavior = scrollBehavior,
     )
 }
+
+private fun buildProblemLog(context: android.content.Context): String {
+    val sb = StringBuilder()
+    sb.appendLine("=== NekoSU problem log ===")
+    sb.appendLine("generated: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())}")
+    sb.appendLine("manager: ${com.nekosu.data.logging.getManagerVersion(context)}")
+    sb.appendLine("brand/model: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}")
+    sb.appendLine("android: ${android.os.Build.VERSION.RELEASE} (sdk ${android.os.Build.VERSION.SDK_INT})")
+    sb.appendLine("fingerprint: ${android.os.Build.FINGERPRINT}")
+    sb.appendLine("build type: ${android.os.Build.TYPE} tags=${android.os.Build.TAGS}")
+    sb.appendLine()
+    sb.appendLine("=== jailbreak (Magica) failure log ===")
+    val failure = com.nekosu.magica.MagicaFailureLog.read(context)
+    sb.appendLine(failure.ifBlank { "(no recorded jailbreak failure)" })
+    return sb.toString()
+}
+
