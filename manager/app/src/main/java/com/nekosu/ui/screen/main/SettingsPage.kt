@@ -239,6 +239,23 @@ fun SettingsPage(bottomPadding: Dp) {
                 bottom = innerPadding.calculateBottomPadding() + bottomPadding + 15.dp,
             ),
         ) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .fillMaxWidth(),
+                ) {
+                    SettingsJumpPageWidget(
+                        icon = Icons.TwoTone.Search,
+                        title = stringResource(R.string.settings_search_title),
+                        description = stringResource(R.string.settings_search_summary),
+                        onClick = {
+                            navigator.push(Route.SettingsSearch)
+                        },
+                    )
+                }
+            }
+
             // 配置卡片
             if (homeState.systemStatus.isFullFeatured) {
                 item {
@@ -593,28 +610,6 @@ fun SettingsPage(bottomPadding: Dp) {
                                 description = stringResource(R.string.guide_summary),
                                 onClick = {
                                     navigator.push(Route.ManualLoadGuide)
-                                },
-                            )
-                        }
-
-                        item {
-                            SettingsJumpPageWidget(
-                                icon = Icons.TwoTone.Search,
-                                title = stringResource(R.string.settings_search_title),
-                                description = stringResource(R.string.settings_search_summary),
-                                onClick = {
-                                    navigator.push(Route.SettingsSearch)
-                                },
-                            )
-                        }
-
-                        item {
-                            SettingsJumpPageWidget(
-                                icon = Icons.TwoTone.Image,
-                                title = stringResource(R.string.app_icon_title),
-                                description = stringResource(R.string.app_icon_summary),
-                                onClick = {
-                                    navigator.push(Route.AppIcon)
                                 },
                             )
                         }

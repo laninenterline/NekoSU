@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.Image
 import androidx.compose.material.icons.twotone.Android
 import androidx.compose.material.icons.twotone.Animation
 import androidx.compose.material.icons.twotone.Badge
@@ -109,6 +110,7 @@ import com.nekosu.ui.component.settings.SettingsChooseWidget
 import com.nekosu.ui.component.settings.SettingsJumpPageWidget
 import com.nekosu.ui.component.settings.SettingsSwitchWidget
 import com.nekosu.ui.navigation.LocalNavigator
+import com.nekosu.ui.navigation.Route
 import com.nekosu.ui.screen.themeSettings.component.LanguageSelectionDialog
 import com.nekosu.ui.screen.themeSettings.component.ThemeSettingsDialogs
 import com.nekosu.ui.screen.themeSettings.crop.BackgroundCropActivity
@@ -523,7 +525,20 @@ private fun AppearanceSettings(
     val configuration = LocalConfiguration.current
     val isPortrait = configuration.screenWidthDp < configuration.screenHeightDp ||
         (configuration.screenHeightDp.toFloat() / configuration.screenWidthDp > 1.4f)
+    val navigator = LocalNavigator.current
     SegmentedColumn(title = stringResource(R.string.appearance_settings)) {
+        item {
+            // 应用图标
+            SettingsJumpPageWidget(
+                icon = Icons.TwoTone.Image,
+                title = stringResource(R.string.app_icon_title),
+                description = stringResource(R.string.app_icon_summary),
+                onClick = {
+                    navigator.push(Route.AppIcon)
+                },
+            )
+        }
+
         item {
             // 语言设置
             LanguageSetting(state = state, viewModel = viewModel)
