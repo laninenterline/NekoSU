@@ -135,5 +135,9 @@ sealed interface Route :
 
     @Parcelize
     @Serializable
+    data object BlockModules : Route
+
+    @Parcelize
+    @Serializable
     data object DynamicManager : Route
 }

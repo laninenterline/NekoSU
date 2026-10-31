@@ -511,6 +511,17 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.RemoveModerator,
+                                title = stringResource(R.string.block_modules_title),
+                                description = stringResource(R.string.block_modules_summary),
+                                onClick = {
+                                    navigator.push(Route.BlockModules)
+                                },
+                            )
+                        }
+
                         if (homeState.systemStatus.isFullFeatured) {
                             item {
                                 SettingsJumpPageWidget(

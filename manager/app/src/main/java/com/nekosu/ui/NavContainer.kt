@@ -77,6 +77,7 @@ import com.nekosu.ui.navigation.Route
 import com.nekosu.ui.overscroll.StretchOverscrollCompensationState
 import com.nekosu.ui.overscroll.rememberCustomOverscrollFactory
 import com.nekosu.ui.screen.AppProfileScreen
+import com.nekosu.ui.screen.BlockModulesScreen
 import com.nekosu.ui.screen.AppProfileTemplateScreen
 import com.nekosu.ui.screen.DynamicManagerScreen
 import com.nekosu.ui.screen.ExecuteModuleActionScreen
@@ -573,6 +574,17 @@ fun NavContainer(
                     useBlur = useBlur,
                 ) {
                     DynamicManagerScreen()
+                }
+            }
+            entry<Route.BlockModules>(swipeDismiss = swipeBackDirection) {
+                ManagerNavEntry(
+                    interceptPredictiveBack = interceptPredictiveBack,
+                    onBack = onBack,
+                    themeConfig = themeConfig,
+                    backgroundRenderState = backgroundRenderState,
+                    useBlur = useBlur,
+                ) {
+                    BlockModulesScreen()
                 }
             }
         }

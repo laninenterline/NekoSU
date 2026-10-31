@@ -1,6 +1,6 @@
 pub mod magica;
 
-use std::{process::Command, time::Instant};
+use std::{ffi::CString, process::Command, time::Instant};
 
 use anyhow::{Context, Result};
 use log::{info, warn};
@@ -14,6 +14,27 @@ use crate::{
     },
     assets, defs,
 };
+
+const KSU_BLOCK_MODULES_CONFIG: &str = "/data/adb/ksu/block_modules";
+const KSU_BLOCK_MODULES_MAX_LEN: usize = 255;
+
+/// Read the optional kernel-module blacklist configured from the manager.
+/// The list is passed as the `block_modules` module parameter at load time
+/// (see ksu_module_blacklist_init), so it must be set before kernelsu.ko loads.
+fn read_block_modules() -> Option<String> {
+    let modules = std::fs::read_to_string(KSU_BLOCK_MODULES_CONFIG).ok()?;
+    let modules = modules.trim().to_string();
+    if modules.is_empty() || modules.len() > KSU_BLOCK_MODULES_MAX_LEN {
+        return None;
+    }
+    let valid = modules.split(',').all(|name| {
+        !name.is_empty()
+            && name
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-')
+    });
+    if valid { Some(modules) } else { None }
+}
 
 fn dump_process_info(label: &str) {
     use rustix::process::{getgid, getgroups, getpid, getuid};
@@ -105,12 +126,19 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
         // 4. Load kernelsu.ko from memory with manual relocation
         info!("Loading kernelsu.ko for KMI {kmi}...");
         // bundled flag is meaningless in jailbreak mode since we can't flash boot to update it.
-        let params = if allow_shell {
-            cstr!("allow_shell=1")
-        } else {
-            cstr!("")
-        };
-        ksuinit::load_module(&ko_data, params).context("Failed to load kernelsu.ko")?;
+        let mut param_str = String::new();
+        if allow_shell {
+            param_str.push_str("allow_shell=1");
+        }
+        if let Some(modules) = read_block_modules() {
+            if !param_str.is_empty() {
+                param_str.push(' ');
+            }
+            param_str.push_str("block_modules=");
+            param_str.push_str(&modules);
+        }
+        let params = CString::new(param_str).context("Invalid module parameters")?;
+        ksuinit::load_module(&ko_data, params.as_c_str()).context("Failed to load kernelsu.ko")?;
         info!("kernelsu.ko loaded successfully!");
         dump_process_info("after load_module");
     }
