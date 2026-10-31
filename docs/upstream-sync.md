@@ -161,3 +161,6 @@
 - [x] `kernel/tools/code_generation/syscall_no/syscall_no.mk`：旧式内核（≤6.10）按源码树 `unistd32.h` 传入 compat 表，修复 `asm/unistd_compat_32.h` 缺失
 - [x] `scripts/build_kmi.sh`：构建前清理内核树里旧的 `compat/syscall_no.h` / `kernelsu.mod.c`
 - [x] `android14-6.1`（旧式 Kbuild）编译验证通过
+- [x] `android17-6.18`（新式 Kbuild）编译验证通过
+- [x] 复核结论：`feature/adb_root.*`、`hook/arm64/syscall_hook.c`、`hook/arm64/patch_memory.c`、`hook/lsm_hook*` 等我们的实现已是上游超集（compat dispatcher、vmap 回退、多管理器/证书、自研 lsm hook），不做整文件替换
+- [ ] 后续只做“上游具体修复”的手工 cherry-pick，以及 manager/userspace 侧的上游对齐
