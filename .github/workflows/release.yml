@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.0-canary.5)'
+        required: false
+        default: '' 
 
 permissions:
   contents: write
@@ -102,7 +107,7 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           APK=$(ls -t manager/app/build/outputs/apk/release/*arm64-v8a-release.apk | head -1)
           test -n "$APK"
