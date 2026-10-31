@@ -19,7 +19,7 @@ jobs:
     uses: ./.github/workflows/build-lkm.yml
     secrets: inherit
     with:
-      kmis: 'android14-6.1 android15-6.6 android16-6.12 android17-6.18'
+      kmis: '["android14-6.1","android15-6.6","android16-6.12","android17-6.18"]'
 
   apk:
     needs: lkm
@@ -30,8 +30,9 @@ jobs:
       - name: Download LKM assets
         uses: actions/download-artifact@v4
         with:
-          name: lkm-assets
+          pattern: lkm-*
           path: userspace/ksud/bin/aarch64
+          merge-multiple: true
 
       - name: Setup Java
         uses: actions/setup-java@v4
