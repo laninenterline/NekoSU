@@ -168,3 +168,9 @@
 - [x] cherry-pick 上游 `34a82ab7`：6.18+ 不再做 policydb config fixup（布局已变）
 - [x] cherry-pick 上游 `b1fce49e` 的部分：从高频路径移除 9 行 noisy pr_info
 - [x] 6.1 / 6.12 / 6.18 在以上修复后重新编译通过
+
+## 七、manager / userspace 上游对齐结论
+
+- `userspace/ksud`、`userspace/ksuinit`：扫描上游近 250 个相关提交，缺的只有重构/CI 类（如 cargo workspace、CI 构建、rustix 版本固定），与我们的 BakaSU 布局/uapi 不兼容，**无需移植**
+- `manager`：上游管理器是 `me.weishu.kernelsu` + Miuix 风格的实现，我们的管理器是 BakaSU 重写版（`com.nekosu`、自研 UI/多 KMI/SUSFS/jailbreak 页面），上游的 UI 修复（Miuix import、SuperArrow、主题/闪屏等）**无法直接移植**
+- 结论：manager 侧保持现状；后续若要继续对齐，只考虑上游的**非 UI 逻辑**（如 Natives/ksu API），但需先统一 uapi 版本策略
