@@ -1,3 +1,4 @@
 **/*.ko
+!aarch64/android11-5.4_kernelsu.ko
 **/mkbootfs
 **/ksuinit
