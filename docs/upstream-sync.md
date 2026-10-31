@@ -150,3 +150,11 @@
 
 > 说明：BakaSU 的实现并不都是“旧代码”，其中 SUSFS、多 KMI、多管理器、preinit 等是我们刻意保留的优秀增量；
 > 本清单的原则是：**无我们逻辑的文件优先吸收上游；有我们逻辑的文件只做上游修复的手工移植**。
+
+## 六、执行进度
+
+- [x] `hook/tp_marker.c` 改用上游版本（移除高频路径 noisy logs）
+- [x] `infra/seccomp_cache.[ch]` 改用上游实现（统一 5.10+ 守卫）
+- [x] 构建脚本修复 6.12 modpost 空 `__version_ext_names`（输出 `= ""`）
+- [x] `android16-6.12` 的 kernelsu.ko + SUSFS ko 编译验证通过
+- [ ] `feature/adb_root.*`、`hook/arm64/syscall_hook.c`、`manager/throne_tracker.*` 等需连同调用方一起移植上游重构版
