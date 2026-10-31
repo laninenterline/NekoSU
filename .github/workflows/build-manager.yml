@@ -1,17 +1,8 @@
 name: Build Manager (debug)
 
 on:
+  # 只在手动触发或 PR 时构建；push 到 main 不再自动编译（发布只在 release.yml 打 tag 时进行）
   workflow_dispatch:
-  push:
-    branches: [ main ]
-    paths:
-      - 'manager/**'
-      - 'userspace/**'
-      - 'kernel/**'
-      - 'uapi/**'
-      - 'scripts/**'
-      - '.github/workflows/build-manager.yml'
-      - '.github/workflows/build-lkm.yml'
   pull_request:
     paths:
       - 'manager/**'
