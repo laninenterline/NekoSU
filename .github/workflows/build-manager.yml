@@ -65,6 +65,11 @@ jobs:
           export CC_aarch64_linux_android="$NDKBIN/aarch64-linux-android29-clang"
           export CXX_aarch64_linux_android="$NDKBIN/aarch64-linux-android29-clang++"
           export AR_aarch64_linux_android="$NDKBIN/llvm-ar"
+          # bindgen must cross-compile headers against the NDK sysroot
+          SYSROOT="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
+          export BINDGEN_EXTRA_CLANG_ARGS="--target=aarch64-linux-android --sysroot=$SYSROOT"
+          export BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="$BINDGEN_EXTRA_CLANG_ARGS"
+          export BINDGEN_EXTRA_CLANG_ARGS_aarch64-linux-android="$BINDGEN_EXTRA_CLANG_ARGS"
           cargo +nightly build --target aarch64-linux-android --release \
             --manifest-path userspace/ksud/Cargo.toml
           mkdir -p manager/app/src/main/jniLibs/arm64-v8a
