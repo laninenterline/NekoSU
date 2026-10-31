@@ -32,18 +32,25 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Setup Android SDK (preinstalled)
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          [ -d "$SDK" ] || SDK=/usr/local/lib/android/sdk
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          SDKM=$(ls "$SDK"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1)
+          test -n "$SDKM" || { echo "sdkmanager not found under $SDK"; exit 1; }
+          echo "SDKMANAGER=$SDKM" >> "$GITHUB_ENV"
 
       - name: Install Android SDK components
         run: |
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager --install \
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install \
             "build-tools;36.1.0" \
             "cmake;4.1.0" \
             "ndk;29.0.14206865" >/dev/null
-          sdkmanager --install "platforms;android-37" >/dev/null \
-            || sdkmanager --channel=3 --install "platforms;android-37" >/dev/null
+          "$SDKMANAGER" --install "platforms;android-37" >/dev/null \
+            || "$SDKMANAGER" --channel=3 --install "platforms;android-37" >/dev/null
           sdkmanager --list_installed | head -30
 
       - name: Setup Rust (nightly)
