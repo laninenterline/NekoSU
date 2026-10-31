@@ -84,7 +84,7 @@ fun KmiDiagnosticsScreen() {
     val info = state.systemInfo
     val status = state.systemStatus
     val version = status.kernelVersion
-    val matched = matchKmi(version)
+    val matched = matchKmi(version, info.kernelRelease, android.os.Build.VERSION.SDK_INT)
     val kmiText = matched?.kmi ?: "-"
 
     val report = buildString {

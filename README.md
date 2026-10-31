@@ -6,8 +6,8 @@ NekoSU 是一个基于 KernelSU 的 Android Root 管理器分支，**只支持�
 ## 特性
 
 - su 授权、超级用户管理、模块安装/刷写（保留 KernelSU 模块体系）
-- **内嵌内核模块**：`android14-6.1` / `android15-6.6` / `android16-6.12` / `android17-6.18` 的 `kernelsu.ko`（官方 GKI 镜像编译）随 `ksud` 打进 APK；
-  ksud 会按运行内核 release 自动选择对应 KMI 的 ko。SUSFS LKM 覆盖 6.1/6.6/6.12/6.18。
+- **内嵌内核模块**：`android12-5.10` / `android13-5.10` / `android13-5.15` / `android14-5.15` / `android14-6.1` / `android15-6.6` / `android16-6.12` / `android17-6.18` 的 `kernelsu.ko`（官方 GKI 镜像编译）随 `ksud` 打进 APK；
+  ksud 会按运行内核 release 自动选择对应 KMI 的 ko。SUSFS LKM 覆盖 5.10 / 5.15 / 6.1 / 6.6 / 6.12 / 6.18。
 - **内嵌 SUSFS LKM**：`android15-6.6_susfs_guard_lkm.ko`（[inforcqb/susfs4ksu-lkm](https://github.com/inforcqb/susfs4ksu-lkm) v2.3.0），
   `late-load` 加载完 kernelsu.ko 后自动加载（`expose_proc=1`），无需单独刷模块
 - `ksud late-load` / Jailbreak 路径；模块刷写、SuSFS 设置界面
@@ -107,7 +107,7 @@ SUSFS 以可加载模块形式提供，来源 [inforcqb/susfs4ksu-lkm](https://g
 - 仅 arm64-v8a
 - 仅临时 root：每次重启后需要重新触发加载（Jailbreak / 漏洞工具）
 - 内核符号通过 `/proc/kallsyms` 绑定，需 root 上下文；设备内核缺少符号时会加载失败
-- 仅支持 GKI 2.0（5.10+）内核
+- 支持 GKI 内核：5.10 / 5.15 / 6.1 / 6.6 / 6.12 / 6.18（8 个 KMI）；非 GKI（厂商自编内核）仍需自行编译
 
 ## 管理器签名证书限制
 
@@ -117,12 +117,12 @@ SUSFS 以可加载模块形式提供，来源 [inforcqb/susfs4ksu-lkm](https://g
 RSA 4096 的证书约 1.3KB，会被内核以 `cert length overlimit` 拒绝。
 
 
-## 多 KMI 构建（GKI 6.x 全支持）
+## 多 KMI 构建（GKI 5.x / 6.x 全支持）
 
 ```bash
 # 需要：git-lfs + zstd；6.12+ 还需宿主 libdw-dev / libdwarf-dev；
 #       DDK 官方预编译镜像仓库（默认 /root/ddk-prebuilts）
-for kmi in android14-6.1 android15-6.6 android16-6.12 android17-6.18; do
+for kmi in android12-5.10 android13-5.10 android13-5.15 android14-5.15 android14-6.1 android15-6.6 android16-6.12 android17-6.18; do
   KSU_EXPECTED_SIZE=<证书DER大小> KSU_EXPECTED_HASH=<证书sha256> \
     scripts/build_kmi.sh "$kmi"
 done

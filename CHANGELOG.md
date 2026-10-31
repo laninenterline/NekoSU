@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### 5.x kernel support
+- Added GKI 5.10 / 5.15 LKM variants: `android12-5.10`, `android13-5.10`, `android13-5.15`, `android14-5.15`
+- Manager KMI matcher now supports 8 KMIs and disambiguates 5.10/5.15 by the `androidN` release tag (SDK-level fallback)
+- CI `build-lkm` / `release` default KMI list includes all 8 KMIs
+- Verified local LKM builds (kernelsu + SUSFS guard):
+  - android12-5.10 (5.10.252), android13-5.10 (5.10.245)
+  - android13-5.15 (5.15.202), android14-5.15 (5.15.202)
+
 ## v0.1.0-canary.8 (unreleased)
 
 ### Features

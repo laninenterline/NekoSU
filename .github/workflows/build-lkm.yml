@@ -6,7 +6,7 @@ on:
       kmis:
         description: 'KMI list (JSON array)'
         required: false
-        default: '["android14-6.1","android15-6.6","android16-6.12","android17-6.18"]'
+        default: '["android12-5.10","android13-5.10","android13-5.15","android14-5.15","android14-6.1","android15-6.6","android16-6.12","android17-6.18"]'
       expected_size:
         description: 'Manager cert DER size (KSU_EXPECTED_SIZE)'
         required: false
@@ -20,7 +20,7 @@ on:
       kmis:
         required: false
         type: string
-        default: '["android14-6.1","android15-6.6","android16-6.12","android17-6.18"]'
+        default: '["android12-5.10","android13-5.10","android13-5.15","android14-5.15","android14-6.1","android15-6.6","android16-6.12","android17-6.18"]'
       expected_size:
         required: false
         type: string
