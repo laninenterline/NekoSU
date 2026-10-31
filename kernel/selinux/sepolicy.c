@@ -1175,6 +1175,7 @@ int ksu_dup_policydb(struct policydb *old_db, struct policydb *new_db)
     len -= fp.len;
     ksu_unlock_sepolicy_legacy();
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 18, 0)
     // https://android-review.googlesource.com/c/kernel/common/+/3009995
     // Android won't add these flags to policydb_write....
     // fixup config
@@ -1195,6 +1196,7 @@ int ksu_dup_policydb(struct policydb *old_db, struct policydb *new_db)
         }
 #endif
     }
+#endif
 
     // rewind fp
     fp.data = data;

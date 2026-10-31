@@ -164,3 +164,7 @@
 - [x] `android17-6.18`（新式 Kbuild）编译验证通过
 - [x] 复核结论：`feature/adb_root.*`、`hook/arm64/syscall_hook.c`、`hook/arm64/patch_memory.c`、`hook/lsm_hook*` 等我们的实现已是上游超集（compat dispatcher、vmap 回退、多管理器/证书、自研 lsm hook），不做整文件替换
 - [ ] 后续只做“上游具体修复”的手工 cherry-pick，以及 manager/userspace 侧的上游对齐
+- [x] cherry-pick 上游 `2fe18831`：file_wrapper 重新打开时平衡 orig_file 引用（fput）
+- [x] cherry-pick 上游 `34a82ab7`：6.18+ 不再做 policydb config fixup（布局已变）
+- [x] cherry-pick 上游 `b1fce49e` 的部分：从高频路径移除 9 行 noisy pr_info
+- [x] 6.1 / 6.12 / 6.18 在以上修复后重新编译通过

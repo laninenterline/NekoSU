@@ -94,10 +94,8 @@ void ksu_show_allow_list(void)
 {
     int i;
     struct perm_data *p = NULL;
-    pr_info("ksu_show_allow_list\n");
     rcu_read_lock();
     hash_for_each_rcu (allow_list, i, p, list) {
-        pr_info("uid :%d, allow: %d\n", p->profile.curr_uid, p->profile.allow_su);
     }
     rcu_read_unlock();
 }
@@ -606,7 +604,6 @@ void ksu_prune_allowlist(bool (*is_uid_valid)(uid_t, char *, void *), void *data
         bool is_preserved_uid = uid == KSU_APP_PROFILE_PRESERVE_UID;
         if (!is_preserved_uid && !is_uid_valid(uid, package, data)) {
             modified = true;
-            pr_info("prune uid: %d, package: %s\n", uid, package);
             hlist_del_rcu(&np->list);
             put_perm_data(np);
             --allow_list_count;
