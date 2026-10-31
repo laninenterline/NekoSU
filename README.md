@@ -96,8 +96,8 @@ SUSFS 以可加载模块形式提供，来源 [inforcqb/susfs4ksu-lkm](https://g
 
 ## 许可与致谢
 
-- 本项目基于 [BakaSU](https://github.com/Baka-SU/BakaSU)（KernelSU 分支）整理，遵循 GPL-3.0（见 `LICENSE`）
-- KernelSU 内核模块、uapi、ksud 源自 [KernelSU](https://github.com/tiann/KernelSU)（GPL-2.0）
+- 本项目基于 [KernelSU](https://github.com/tiann/KernelSU) 上游整理（内核模块、uapi、ksud、ksuinit 均以上游为基座），遵循 GPL-3.0（见 `LICENSE`）
+- 借鉴并保留了 [BakaSU](https://github.com/Baka-SU/BakaSU) 等分支的部分优秀实现（SUSFS LKM 集成、多 KMI 资产、管理器界面等），BakaSU 不再作为项目基座
 - SUSFS LKM 源自 [inforcqb/susfs4ksu-lkm](https://github.com/inforcqb/susfs4ksu-lkm)（GPL-2.0），
   其功能逻辑来自 [simonpunk/susfs4ksu](https://gitlab.com/simonpunk/susfs4ksu)
 - 原 BakaSU 美术资源已移除，当前图标为本项目素材
