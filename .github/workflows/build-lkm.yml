@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       kmis:
-        description: 'KMI list (space separated)'
+        description: 'KMI list (JSON array)'
         required: false
-        default: 'android14-6.1 android15-6.6 android16-6.12 android17-6.18'
+        default: '["android14-6.1","android15-6.6","android16-6.12","android17-6.18"]'
       expected_size:
         description: 'Manager cert DER size (KSU_EXPECTED_SIZE)'
         required: false
@@ -20,7 +20,7 @@ on:
       kmis:
         required: false
         type: string
-        default: 'android14-6.1 android15-6.6 android16-6.12 android17-6.18'
+        default: '["android14-6.1","android15-6.6","android16-6.12","android17-6.18"]'
       expected_size:
         required: false
         type: string
@@ -32,56 +32,50 @@ on:
 
 jobs:
   build-lkm:
+    name: LKM ${{ matrix.kmi }}
+    strategy:
+      fail-fast: false
+      matrix:
+        kmi: ${{ fromJSON(inputs.kmis) }}
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ylarod/ddk-min:${{ matrix.kmi }}-20260828
+      options: --privileged
     env:
       KSU_EXPECTED_SIZE: ${{ inputs.expected_size || secrets.KSU_EXPECTED_SIZE }}
       KSU_EXPECTED_HASH: ${{ inputs.expected_hash || secrets.KSU_EXPECTED_HASH }}
-      CLANG_BIN: /usr/lib/llvm-18/bin
-      DDK_PREBUILTS: /home/runner/ddk-prebuilts
-      DDK_WORK: /home/runner/ddk-work
-      KMI_LOGDIR: /home/runner/kmi-logs
-      SUSFS_SRC: /home/runner/susfs-lkm-src
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install host dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            git-lfs zstd clang-18 lld-18 llvm-18 libdw-dev libdwarf-dev libelf-dev \
-            zlib1g-dev python3 build-essential
-          git lfs install
+      - name: Mark workspace safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Validate signing values
         run: |
-          test -n "$KSU_EXPECTED_SIZE" || { echo "KSU_EXPECTED_SIZE is required (repo secret or workflow input)"; exit 1; }
-          test -n "$KSU_EXPECTED_HASH" || { echo "KSU_EXPECTED_HASH is required (repo secret or workflow input)"; exit 1; }
-
-      - name: Clone DDK prebuilt images (git-lfs)
-        run: |
-          export GIT_LFS_SKIP_SMUDGE=1
-          git clone --depth 1 https://cnb.cool/Ylarod/ddk-prebuilts.git "$DDK_PREBUILTS" \
-            || git clone --depth 1 https://github.com/Ylarod/ddk-prebuilts.git "$DDK_PREBUILTS"
-          cd "$DDK_PREBUILTS"
-          git lfs install --local
-          # scripts/build_kmi.sh pulls only the requested KMI images on demand
+          test -n "$KSU_EXPECTED_SIZE" || { echo "KSU_EXPECTED_SIZE is required (repo secret or input)"; exit 1; }
+          test -n "$KSU_EXPECTED_HASH" || { echo "KSU_EXPECTED_HASH is required (repo secret or input)"; exit 1; }
 
       - name: Clone SUSFS LKM source
-        run: |
-          git clone --depth 1 https://github.com/inforcqb/susfs4ksu-lkm.git "$SUSFS_SRC"
+        run: git clone --depth 1 https://github.com/inforcqb/susfs4ksu-lkm.git /tmp/susfs-lkm
 
-      - name: Build each KMI
+      - name: Build kernelsu.ko and SUSFS ko
         run: |
-          set -e
-          for kmi in ${{ inputs.kmis }}; do
-            echo "==== $kmi ===="
-            scripts/build_kmi.sh "$kmi"
-          done
-          ls -l userspace/ksud/bin/aarch64/*.ko
+          set +e
+          export SUSFS_SRC=/tmp/susfs-lkm
+          export SKIP_PREBUILT_FETCH=1
+          export DDK_WORK=/opt/ddk
+          export KMI_LOGDIR=/tmp/kmi-logs
+          export CLANG_BIN="$(dirname "$(command -v clang)")"
+          scripts/build_kmi.sh "${{ matrix.kmi }}"
+          rc=$?
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp -f userspace/ksud/bin/aarch64/${{ matrix.kmi }}_*.ko "$GITHUB_WORKSPACE/out/" 2>/dev/null || true
+          ls -l "$GITHUB_WORKSPACE/out" || true
+          exit $rc
 
       - name: Upload LKM assets
         uses: actions/upload-artifact@v4
         with:
-          name: lkm-assets
-          path: userspace/ksud/bin/aarch64/*.ko
+          name: lkm-${{ matrix.kmi }}
+          path: ${{ github.workspace }}/out/*.ko
           if-no-files-found: error
