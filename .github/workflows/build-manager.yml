@@ -45,13 +45,13 @@ jobs:
       - name: Install Android SDK components
         run: |
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-          echo "=== available platforms ==="
-          "$SDKMANAGER" --list 2>/dev/null | grep -E "platforms;android-3[5-9]" | head -20 || true
           "$SDKMANAGER" --install \
             "build-tools;36.1.0" \
             "cmake;4.1.0" \
             "ndk;29.0.14206865" \
-            "platforms;android-37" >/dev/null
+            "platforms;android-37.0" >/dev/null
+          # AGP asks for "platforms/android-37"; API 37 ships as android-37.0
+          ln -sfn android-37.0 "$ANDROID_SDK_ROOT/platforms/android-37"
           ls "$ANDROID_SDK_ROOT/platforms"
       - name: Setup Rust (nightly)
         uses: dtolnay/rust-toolchain@nightly
