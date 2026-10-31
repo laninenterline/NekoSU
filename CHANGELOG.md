@@ -6,7 +6,9 @@
 - Built `android11-5.4_kernelsu.ko` from AOSP `android11-5.4` (GKI 5.4.302) with the release manager cert
 - Manager KMI matcher supports `android11-5.4` (release tag or SDK 30 fallback)
 - ksud falls back to `android11-5.4` when a 5.4 kernel release string lacks the `android11` tag
-- No SUSFS LKM for 5.4 yet (susfs4ksu-lkm needs 5.6+/5.8+ APIs); kernelsu.ko loads without it
+- SUSFS LKM for 5.4: vendored susfs4ksu-lkm with 5.4 compat patches (proc_ops, task_work, kstrtox, LOOKUP_NO_*, ratelimited, statx stx_mnt_id and imports_guard disabled)
+  - mount namespace walk on 5.4 is rcu-only (no ns_lock), so treat mount hiding as experimental
+  - built `android11-5.4_susfs_guard_lkm.ko` (v2.3.0)
 
 ### 5.x kernel support
 - Added GKI 5.10 / 5.15 LKM variants: `android12-5.10`, `android13-5.10`, `android13-5.15`, `android14-5.15`
