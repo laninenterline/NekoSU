@@ -151,5 +151,21 @@ sealed interface Route :
 
     @Parcelize
     @Serializable
+    data object SettingsSearch : Route
+
+    @Parcelize
+    @Serializable
+    data object AppIcon : Route
+
+    @Parcelize
+    @Serializable
+    data object MultiManager : Route
+
+    @Parcelize
+    @Serializable
+    data object SusfsPresets : Route
+
+    @Parcelize
+    @Serializable
     data object DynamicManager : Route
 }

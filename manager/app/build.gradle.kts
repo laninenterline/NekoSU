@@ -195,6 +195,7 @@ aboutLibraries {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
     lintChecks(project(":lint-rules"))
     baselineProfile(project(":baselineprofile"))
 

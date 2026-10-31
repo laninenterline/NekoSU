@@ -1,0 +1,42 @@
+name: Quality
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'manager/**'
+      - '.github/workflows/quality.yml'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK (preinstalled)
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          test -d "$SDK" || { echo "SDK not found"; exit 1; }
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "SDKMANAGER=$SDK/cmdline-tools/latest/bin/sdkmanager" >> "$GITHUB_ENV"
+
+      - name: Install Android SDK components
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install "build-tools;36.1.0" "cmake;4.1.0" "ndk;29.0.14206865" "platforms;android-37.0" >/dev/null
+          ln -sfn android-37.0 "$ANDROID_SDK_ROOT/platforms/android-37"
+
+      - name: Lint and unit tests
+        working-directory: manager
+        run: |
+          ./gradlew :app:lintDebug :app:testDebugUnitTest --no-configuration-cache \
+            -Dorg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=512m"

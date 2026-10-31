@@ -42,6 +42,10 @@ import androidx.compose.material.icons.twotone.RemoveCircle
 import androidx.compose.material.icons.twotone.RemoveModerator
 import androidx.compose.material.icons.twotone.RestartAlt
 import androidx.compose.material.icons.twotone.Save
+import androidx.compose.material.icons.twotone.Search
+import androidx.compose.material.icons.twotone.Image
+import androidx.compose.material.icons.twotone.Groups
+import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material.icons.twotone.Science
 import androidx.compose.material.icons.twotone.Security
 import androidx.compose.material.icons.twotone.Settings
@@ -167,6 +171,44 @@ fun SettingsPage(bottomPadding: Dp) {
                 }
                 loadingDialog.hide()
                 snackBarHost.showReplacingSnackbar(logSaved)
+            }
+        }
+        val exportSettingsLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/octet-stream"),
+        ) { uri: Uri? ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            scope.launch(Dispatchers.IO) {
+                val ok = runCatching {
+                    val source = preferencesBackupFile(context)
+                    if (!source.isFile) return@runCatching false
+                    context.contentResolver.openOutputStream(uri)?.use { output ->
+                        source.inputStream().use { it.copyTo(output) }
+                    } != null
+                }.getOrDefault(false)
+                withContext(Dispatchers.Main) {
+                    snackBarHost.showReplacingSnackbar(
+                        context.getString(if (ok) R.string.settings_backup_saved else R.string.settings_backup_failed),
+                    )
+                }
+            }
+        }
+        val importSettingsLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocument(),
+        ) { uri: Uri? ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            scope.launch(Dispatchers.IO) {
+                val ok = runCatching {
+                    val target = preferencesBackupFile(context)
+                    target.parentFile?.mkdirs()
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        target.outputStream().use { output -> input.copyTo(output) }
+                    } != null && target.length() > 0
+                }.getOrDefault(false)
+                withContext(Dispatchers.Main) {
+                    snackBarHost.showReplacingSnackbar(
+                        context.getString(if (ok) R.string.settings_restore_done else R.string.settings_backup_failed),
+                    )
+                }
             }
         }
         val exportBugreportLauncher = rememberLauncherForActivityResult(
@@ -555,6 +597,72 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Search,
+                                title = stringResource(R.string.settings_search_title),
+                                description = stringResource(R.string.settings_search_summary),
+                                onClick = {
+                                    navigator.push(Route.SettingsSearch)
+                                },
+                            )
+                        }
+
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Image,
+                                title = stringResource(R.string.app_icon_title),
+                                description = stringResource(R.string.app_icon_summary),
+                                onClick = {
+                                    navigator.push(Route.AppIcon)
+                                },
+                            )
+                        }
+
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Groups,
+                                title = stringResource(R.string.multi_manager_title),
+                                description = stringResource(R.string.multi_manager_summary),
+                                onClick = {
+                                    navigator.push(Route.MultiManager)
+                                },
+                            )
+                        }
+
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Tune,
+                                title = stringResource(R.string.susfs_presets_title),
+                                description = stringResource(R.string.susfs_presets_summary),
+                                onClick = {
+                                    navigator.push(Route.SusfsPresets)
+                                },
+                            )
+                        }
+
+                        item {
+                            SettingsBaseWidget(
+                                icon = Icons.TwoTone.Save,
+                                title = stringResource(R.string.settings_backup_title),
+                                description = stringResource(R.string.settings_backup_summary),
+                                onClick = {
+                                    exportSettingsLauncher.launch("NekoSU_settings_backup.bin")
+                                },
+                            )
+                        }
+
+                        item {
+                            SettingsBaseWidget(
+                                icon = Icons.TwoTone.RestartAlt,
+                                title = stringResource(R.string.settings_restore_title),
+                                description = stringResource(R.string.settings_restore_summary),
+                                onClick = {
+                                    importSettingsLauncher.launch(arrayOf("application/octet-stream", "*/*"))
+                                },
+                            )
+                        }
+
                         if (homeState.systemStatus.isFullFeatured) {
                             item {
                                 SettingsJumpPageWidget(
@@ -765,3 +873,5 @@ private fun buildProblemLog(context: android.content.Context): String {
     return sb.toString()
 }
 
+private fun preferencesBackupFile(context: android.content.Context): java.io.File =
+    java.io.File(java.io.File(context.filesDir, "datastore"), "app_preferences.preferences_pb")

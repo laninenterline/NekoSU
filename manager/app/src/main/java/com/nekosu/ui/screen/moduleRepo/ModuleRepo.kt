@@ -94,6 +94,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nekosu.data.module.ModuleRepository
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -153,6 +154,11 @@ fun ModuleRepoScreen(repositoryUrl: String? = null) {
         parameters = { parametersOf(repositoryUrl) },
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val installedModuleRepository: ModuleRepository = koinInject()
+    val installedModulesState by installedModuleRepository.installedModules.collectAsStateWithLifecycle()
+    val installedKeys = remember(installedModulesState.modules) {
+        installedModulesState.modules.flatMap { listOf(it.id.lowercase(), it.name.lowercase()) }.toSet()
+    }
     val layoutDirection = LocalLayoutDirection.current
     val snackBarHost = LocalSnackbarHost.current
     val topAppBarState = rememberTopAppBarState()
@@ -340,6 +346,8 @@ fun ModuleRepoScreen(repositoryUrl: String? = null) {
                     items(shownModules, key = { it.catalogId }) { module ->
                         OnlineModuleItem(
                             module = module,
+                            installed = installedKeys.contains(module.moduleId.lowercase()) ||
+                                installedKeys.contains(module.moduleName.lowercase()),
                             onQuickInstall = { quickInstall(module) },
                             quickInstallLoading = resolvingModule == module.catalogId,
                             quickInstallEnabled = resolvingModule == null,
@@ -533,6 +541,7 @@ private fun ModuleRepoSortDropdown(
 @Composable
 fun OnlineModuleItem(
     module: CatalogModule,
+    installed: Boolean = false,
     onOpen: () -> Unit,
     onQuickInstall: (() -> Unit)? = null,
     quickInstallLoading: Boolean = false,
@@ -548,6 +557,14 @@ fun OnlineModuleItem(
                 modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
                 maxLines = 1,
             )
+            if (installed) {
+                Text(
+                    text = stringResource(R.string.repo_installed),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp, end = 8.dp),
+                )
+            }
             if (module.stargazerCount > 0) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Icon(

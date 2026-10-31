@@ -84,6 +84,10 @@ import com.nekosu.ui.screen.ExecuteModuleActionScreen
 import com.nekosu.ui.screen.FlashIt
 import com.nekosu.ui.screen.KmiDiagnosticsScreen
 import com.nekosu.ui.screen.ManualLoadGuideScreen
+import com.nekosu.ui.screen.SusfsPresetsScreen
+import com.nekosu.ui.screen.MultiManagerScreen
+import com.nekosu.ui.screen.AppIconScreen
+import com.nekosu.ui.screen.SettingsSearchScreen
 import com.nekosu.ui.screen.MagicaLogScreen
 import com.nekosu.ui.screen.FlashScreen
 import com.nekosu.ui.screen.ScriptRunScreen
@@ -577,6 +581,50 @@ fun NavContainer(
                     useBlur = useBlur,
                 ) {
                     DynamicManagerScreen()
+                }
+            }
+            entry<Route.SettingsSearch>(swipeDismiss = swipeBackDirection) {
+                ManagerNavEntry(
+                    interceptPredictiveBack = interceptPredictiveBack,
+                    onBack = onBack,
+                    themeConfig = themeConfig,
+                    backgroundRenderState = backgroundRenderState,
+                    useBlur = useBlur,
+                ) {
+                    SettingsSearchScreen()
+                }
+            }
+            entry<Route.AppIcon>(swipeDismiss = swipeBackDirection) {
+                ManagerNavEntry(
+                    interceptPredictiveBack = interceptPredictiveBack,
+                    onBack = onBack,
+                    themeConfig = themeConfig,
+                    backgroundRenderState = backgroundRenderState,
+                    useBlur = useBlur,
+                ) {
+                    AppIconScreen()
+                }
+            }
+            entry<Route.MultiManager>(swipeDismiss = swipeBackDirection) {
+                ManagerNavEntry(
+                    interceptPredictiveBack = interceptPredictiveBack,
+                    onBack = onBack,
+                    themeConfig = themeConfig,
+                    backgroundRenderState = backgroundRenderState,
+                    useBlur = useBlur,
+                ) {
+                    MultiManagerScreen()
+                }
+            }
+            entry<Route.SusfsPresets>(swipeDismiss = swipeBackDirection) {
+                ManagerNavEntry(
+                    interceptPredictiveBack = interceptPredictiveBack,
+                    onBack = onBack,
+                    themeConfig = themeConfig,
+                    backgroundRenderState = backgroundRenderState,
+                    useBlur = useBlur,
+                ) {
+                    SusfsPresetsScreen()
                 }
             }
             entry<Route.ManualLoadGuide>(swipeDismiss = swipeBackDirection) {

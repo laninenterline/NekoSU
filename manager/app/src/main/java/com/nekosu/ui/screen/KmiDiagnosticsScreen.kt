@@ -25,8 +25,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,6 +38,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nekosu.KernelVersion
+import com.nekosu.ui.util.embeddedKmis
+import com.nekosu.ui.util.matchKmi
 import com.nekosu.R
 import com.nekosu.domain.model.HomeDashboardState
 import com.nekosu.magica.MagicaCompat
@@ -47,21 +53,13 @@ import com.nekosu.ui.util.adaptiveScaffoldWindowInsets
 import com.nekosu.ui.util.showReplacingSnackbar
 import com.nekosu.ui.viewmodel.HomeUiAction
 import com.nekosu.ui.viewmodel.HomeViewModel
+import com.nekosu.data.shell.KsuCliRepository
+import com.topjohnwu.superuser.ShellUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-
-private data class KmiEntry(val kmi: String, val major: Int, val minor: Int)
-
-private val embeddedKmis = listOf(
-    KmiEntry("android14-6.1", 6, 1),
-    KmiEntry("android15-6.6", 6, 6),
-    KmiEntry("android16-6.12", 6, 12),
-    KmiEntry("android17-6.18", 6, 18),
-)
-
-private fun matchKmi(version: KernelVersion): KmiEntry? =
-    embeddedKmis.firstOrNull { it.major == version.major && it.minor == version.patchLevel }
 
 private fun copyToClipboard(context: Context, label: String, text: String) {
     val manager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -75,6 +73,7 @@ fun KmiDiagnosticsScreen() {
     val themeConfig: ThemeConfig = koinInject()
     val cardConfig: CardConfig = koinInject()
     val viewModel = koinViewModel<HomeViewModel>()
+    val repository: KsuCliRepository = koinInject()
     val state: HomeDashboardState by viewModel.uiState.collectAsStateWithLifecycle()
     val navigator = LocalNavigator.current
     val snackBarHost = LocalSnackbarHost.current
@@ -171,6 +170,53 @@ fun KmiDiagnosticsScreen() {
                                 stringResource(R.string.kmi_diag_susfs_off)
                             },
                         )
+                    }
+                }
+            }
+            item {
+                OutlinedCard {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(stringResource(R.string.kmi_diag_advice_title), style = MaterialTheme.typography.titleSmall)
+                        Spacer(Modifier.height(6.dp))
+                        val advice = buildList {
+                            if (!status.isRootAvailable) add(stringResource(R.string.kmi_diag_advice_no_root))
+                            if (matched == null) add(stringResource(R.string.kmi_diag_advice_no_match))
+                            if (status.isRootAvailable && !info.susfsEnabled) add(stringResource(R.string.kmi_diag_advice_susfs))
+                            if (status.isRootAvailable && matched != null) add(stringResource(R.string.kmi_diag_advice_ok))
+                        }
+                        advice.forEach { Text("\u2022 $it", style = MaterialTheme.typography.bodyMedium) }
+                    }
+                }
+            }
+            if (status.isRootAvailable) {
+                item {
+                    var showReboot by remember { mutableStateOf(false) }
+                    if (showReboot) {
+                        AlertDialog(
+                            onDismissRequest = { showReboot = false },
+                            title = { Text(stringResource(R.string.kmi_diag_reboot_title)) },
+                            text = { Text(stringResource(R.string.kmi_diag_reboot_message)) },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showReboot = false
+                                    scope.launch {
+                                        withContext(Dispatchers.IO) {
+                                            runCatching {
+                                                ShellUtils.fastCmd(repository.getRootShell(), "reboot")
+                                            }
+                                        }
+                                    }
+                                }) { Text(androidx.compose.ui.res.stringResource(android.R.string.ok)) }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showReboot = false }) {
+                                    Text(androidx.compose.ui.res.stringResource(android.R.string.cancel))
+                                }
+                            },
+                        )
+                    }
+                    TextButton(onClick = { showReboot = true }) {
+                        Text(stringResource(R.string.kmi_diag_reboot_button))
                     }
                 }
             }
