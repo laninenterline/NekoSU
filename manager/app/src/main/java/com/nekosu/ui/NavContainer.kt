@@ -82,6 +82,8 @@ import com.nekosu.ui.screen.AppProfileTemplateScreen
 import com.nekosu.ui.screen.DynamicManagerScreen
 import com.nekosu.ui.screen.ExecuteModuleActionScreen
 import com.nekosu.ui.screen.FlashIt
+import com.nekosu.ui.screen.KmiDiagnosticsScreen
+import com.nekosu.ui.screen.MagicaLogScreen
 import com.nekosu.ui.screen.FlashScreen
 import com.nekosu.ui.screen.ScriptRunScreen
 import com.nekosu.ui.screen.SulogScreen
@@ -574,6 +576,28 @@ fun NavContainer(
                     useBlur = useBlur,
                 ) {
                     DynamicManagerScreen()
+                }
+            }
+            entry<Route.KmiDiagnostics>(swipeDismiss = swipeBackDirection) {
+                ManagerNavEntry(
+                    interceptPredictiveBack = interceptPredictiveBack,
+                    onBack = onBack,
+                    themeConfig = themeConfig,
+                    backgroundRenderState = backgroundRenderState,
+                    useBlur = useBlur,
+                ) {
+                    KmiDiagnosticsScreen()
+                }
+            }
+            entry<Route.MagicaLog>(swipeDismiss = swipeBackDirection) {
+                ManagerNavEntry(
+                    interceptPredictiveBack = interceptPredictiveBack,
+                    onBack = onBack,
+                    themeConfig = themeConfig,
+                    backgroundRenderState = backgroundRenderState,
+                    useBlur = useBlur,
+                ) {
+                    MagicaLogScreen()
                 }
             }
             entry<Route.BlockModules>(swipeDismiss = swipeBackDirection) {

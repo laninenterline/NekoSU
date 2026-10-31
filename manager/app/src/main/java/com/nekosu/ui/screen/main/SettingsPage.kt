@@ -522,6 +522,28 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Science,
+                                title = stringResource(R.string.kmi_diag_title),
+                                description = stringResource(R.string.kmi_diag_summary),
+                                onClick = {
+                                    navigator.push(Route.KmiDiagnostics)
+                                },
+                            )
+                        }
+
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Info,
+                                title = stringResource(R.string.magica_log_title),
+                                description = stringResource(R.string.magica_log_summary),
+                                onClick = {
+                                    navigator.push(Route.MagicaLog)
+                                },
+                            )
+                        }
+
                         if (homeState.systemStatus.isFullFeatured) {
                             item {
                                 SettingsJumpPageWidget(
@@ -725,6 +747,10 @@ private fun buildProblemLog(context: android.content.Context): String {
     sb.appendLine("=== jailbreak (Magica) failure log ===")
     val failure = com.nekosu.magica.MagicaFailureLog.read(context)
     sb.appendLine(failure.ifBlank { "(no recorded jailbreak failure)" })
+    sb.appendLine()
+    sb.appendLine("=== crash log ===")
+    val crash = com.nekosu.data.logging.CrashLogger.read(context)
+    sb.appendLine(crash.ifBlank { "(no recorded crash)" })
     return sb.toString()
 }
 

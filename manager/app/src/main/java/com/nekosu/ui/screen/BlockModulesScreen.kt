@@ -78,6 +78,7 @@ fun BlockModulesScreen() {
 
     var text by remember { mutableStateOf("") }
     var loaded by remember { mutableStateOf(false) }
+    var loadedModules by remember { mutableStateOf(emptyList<String>()) }
     val savedMessage = stringResource(R.string.block_modules_saved)
     val invalidMessage = stringResource(R.string.block_modules_invalid)
 
@@ -88,6 +89,14 @@ fun BlockModulesScreen() {
             }.getOrDefault("").trim()
         }
         text = current
+        val modules = withContext(Dispatchers.IO) {
+            runCatching {
+                ShellUtils.fastCmd(repository.getRootShell(), "cat /proc/modules 2>/dev/null")
+            }.getOrDefault("").lineSequence()
+                .mapNotNull { line -> line.substringBefore(' ').takeIf { it.isNotBlank() } }
+                .toList()
+        }
+        loadedModules = modules
         loaded = true
     }
 
@@ -159,6 +168,25 @@ fun BlockModulesScreen() {
                     TextButton(onClick = { text = "" }, enabled = loaded) {
                         Text(stringResource(R.string.block_modules_clear))
                     }
+                }
+            }
+            item {
+                Column {
+                    Text(
+                        text = stringResource(R.string.block_modules_loaded_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val configured = text.split(',').map { it.trim() }.filter { it.isNotEmpty() }
+                    val present = configured.filter { it in loadedModules }
+                    Text(
+                        text = if (present.isEmpty()) {
+                            stringResource(R.string.block_modules_loaded_none)
+                        } else {
+                            present.joinToString(", ")
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
             item {

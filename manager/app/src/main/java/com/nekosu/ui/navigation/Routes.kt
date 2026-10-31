@@ -139,5 +139,13 @@ sealed interface Route :
 
     @Parcelize
     @Serializable
+    data object KmiDiagnostics : Route
+
+    @Parcelize
+    @Serializable
+    data object MagicaLog : Route
+
+    @Parcelize
+    @Serializable
     data object DynamicManager : Route
 }
