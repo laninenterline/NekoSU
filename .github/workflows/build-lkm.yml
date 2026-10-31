@@ -55,23 +55,45 @@ jobs:
           test -n "$KSU_EXPECTED_SIZE" || { echo "KSU_EXPECTED_SIZE is required (repo secret or input)"; exit 1; }
           test -n "$KSU_EXPECTED_HASH" || { echo "KSU_EXPECTED_HASH is required (repo secret or input)"; exit 1; }
 
-      - name: Clone SUSFS LKM source
-        run: git clone --depth 1 https://github.com/inforcqb/susfs4ksu-lkm.git /tmp/susfs-lkm
-
-      - name: Build kernelsu.ko and SUSFS ko
+      - name: Build kernelsu.ko (kernel/Makefile, same as upstream DDK CI)
         run: |
-          set +e
-          export SUSFS_SRC=/tmp/susfs-lkm
-          export SKIP_PREBUILT_FETCH=1
-          export DDK_WORK=/opt/ddk
-          export KMI_LOGDIR=/tmp/kmi-logs
-          export CLANG_BIN="$(dirname "$(command -v clang)")"
-          scripts/build_kmi.sh "${{ matrix.kmi }}"
-          rc=$?
-          mkdir -p "$GITHUB_WORKSPACE/out"
-          cp -f userspace/ksud/bin/aarch64/${{ matrix.kmi }}_*.ko "$GITHUB_WORKSPACE/out/" 2>/dev/null || true
-          ls -l "$GITHUB_WORKSPACE/out" || true
-          exit $rc
+          set -e
+          cd kernel
+          CONFIG_KSU=m \
+          CONFIG_KSU_MULTI_MANAGER_SUPPORT=y \
+          CONFIG_KSU_TRACEPOINT_HOOK=y \
+          KSU_EXPECTED_SIZE="$KSU_EXPECTED_SIZE" \
+          KSU_EXPECTED_HASH="$KSU_EXPECTED_HASH" \
+          CC=clang make
+          KMI="${{ matrix.kmi }}"
+          OUT_DIR="$GITHUB_WORKSPACE/out"
+          mkdir -p "$OUT_DIR"
+          cp kernelsu.ko "$OUT_DIR/${KMI}_kernelsu.ko"
+          llvm-strip -d "$OUT_DIR/${KMI}_kernelsu.ko"
+          ls -l "$OUT_DIR/${KMI}_kernelsu.ko"
+
+      - name: Build SUSFS ko (LKM)
+        run: |
+          set -e
+          KMI="${{ matrix.kmi }}"
+          git clone --depth 1 https://github.com/inforcqb/susfs4ksu-lkm.git /tmp/susfs-lkm
+          SRCK=/tmp/susfs-lkm/kernel
+          KDIR="${KDIR:-/opt/ddk/kdir/$KMI}"
+          SOUT=/tmp/susfs-out
+          rm -rf "$SOUT"; mkdir -p "$SOUT"
+          case "$KMI" in
+            android16-6.12|android17-6.18)
+              make -C "$KDIR" M="$SRCK" MO="$SOUT" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
+                KBUILD_MODPOST_WARN=1 modules -j"$(nproc)" ;;
+            *)
+              make -C "$KDIR" M="$SRCK" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
+                KBUILD_MODPOST_WARN=1 modules -j"$(nproc)" ;;
+          esac
+          KO=$(ls "$SOUT/susfs_guard_lkm.ko" "$SRCK/susfs_guard_lkm.ko" 2>/dev/null | head -1)
+          test -n "$KO"
+          OUT_DIR="$GITHUB_WORKSPACE/out"
+          cp "$KO" "$OUT_DIR/${KMI}_susfs_guard_lkm.ko"
+          llvm-strip -d "$OUT_DIR/${KMI}_susfs_guard_lkm.ko"
 
       - name: Upload LKM assets
         uses: actions/upload-artifact@v4
