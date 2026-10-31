@@ -115,3 +115,30 @@ SUSFS 以可加载模块形式提供，来源 [inforcqb/susfs4ksu-lkm](https://g
 (`CERT_MAX_LENGTH`)，且 APK 必须只有 v2 签名、不能带 v1。
 生成 release keystore 时请用 RSA 2048 或 EC P-256（EC 约 318 字节）；
 RSA 4096 的证书约 1.3KB，会被内核以 `cert length overlimit` 拒绝。
+
+
+## 多 KMI 构建（GKI 6.x 全支持）
+
+```bash
+# 需要：git-lfs + zstd；6.12+ 还需宿主 libdw-dev / libdwarf-dev；
+#       DDK 官方预编译镜像仓库（默认 /root/ddk-prebuilts）
+for kmi in android14-6.1 android15-6.6 android16-6.12 android17-6.18; do
+  KSU_EXPECTED_SIZE=<证书DER大小> KSU_EXPECTED_HASH=<证书sha256> \
+    scripts/build_kmi.sh "$kmi"
+done
+# 然后重编 ksud（必须，rust-embed 内嵌新 ko）：
+scripts/build-manager.sh
+```
+
+脚本会自动处理：
+
+- 按 KMI 拉取官方 `kdir-min` + `src` 镜像（git-lfs），解压到 `/opt/ddk/{kdir,src}/<kmi>`
+- 清掉官方镜像里的 x86_64 宿主工具，用本机 clang 重建 fixdep/modpost
+- ≤6.11 走旧 Kbuild（`M=输出 src=源码`）；6.12+ 走新 Kbuild（`M=源码 MO=输出`）并自动 `KSU_SKIP_PREINIT=1`
+- 6.12 的 modpost 空 `__version_ext_names` 数组问题自动修补
+- 关闭模块 BTF（避免 resolve_btfids 宿主依赖）
+- 编译 `kernelsu.ko` 与 `susfs_guard_lkm.ko`，strip 后放入 `userspace/ksud/bin/aarch64/`
+- 清理临时 KDIR/SRC（`KEEP=1` 可保留）
+
+已知限制：6.18 的 SUSFS 源码可能需要额外清理 `modules.order` 等旧构建残留（脚本已自动处理）。
+
