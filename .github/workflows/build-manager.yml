@@ -48,10 +48,15 @@ jobs:
           "$SDKMANAGER" --install \
             "build-tools;36.1.0" \
             "cmake;4.1.0" \
-            "ndk;29.0.14206865" >/dev/null
-          "$SDKMANAGER" --install "platforms;android-37" >/dev/null \
-            || "$SDKMANAGER" --channel=3 --install "platforms;android-37" >/dev/null
-          sdkmanager --list_installed | head -30
+            "ndk;29.0.14206865" \
+            "platforms;android-36" >/dev/null
+          # Android 17 (API 37) platform is not published in the SDK repo yet;
+          # the project only needs a platform directory named android-37 to
+          # compile against (same approach used on the maintainer machine).
+          if [ ! -d "$ANDROID_SDK_ROOT/platforms/android-37" ]; then
+            cp -r "$ANDROID_SDK_ROOT/platforms/android-36" "$ANDROID_SDK_ROOT/platforms/android-37"
+          fi
+          ls "$ANDROID_SDK_ROOT/platforms"
 
       - name: Setup Rust (nightly)
         uses: dtolnay/rust-toolchain@nightly

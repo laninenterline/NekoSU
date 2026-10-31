@@ -37,8 +37,8 @@ spotless {
 }
 
 extra["androidMinSdkVersion"] = 26
-extra["androidTargetSdkVersion"] = 37
-extra["androidCompileSdkVersion"] = 37
+extra["androidTargetSdkVersion"] = (project.findProperty("NEKOSU_TARGET_SDK")?.toString()?.toIntOrNull()) ?: 37
+extra["androidCompileSdkVersion"] = (project.findProperty("NEKOSU_COMPILE_SDK")?.toString()?.toIntOrNull()) ?: 37
 extra["androidBuildToolsVersion"] = "36.1.0"
 extra["androidCompileNdkVersion"] = libs.versions.ndk.get()
 extra["androidSourceCompatibility"] = JavaVersion.VERSION_21
