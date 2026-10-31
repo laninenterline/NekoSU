@@ -59,7 +59,8 @@ jobs:
           git clone --depth 1 https://cnb.cool/Ylarod/ddk-prebuilts.git "$DDK_PREBUILTS" \
             || git clone --depth 1 https://github.com/Ylarod/ddk-prebuilts.git "$DDK_PREBUILTS"
           cd "$DDK_PREBUILTS"
-          git lfs pull --include="kdir-min/*,src/*" || true
+          git lfs install --local
+          # scripts/build_kmi.sh pulls only the requested KMI images on demand
 
       - name: Build each KMI
         run: |
