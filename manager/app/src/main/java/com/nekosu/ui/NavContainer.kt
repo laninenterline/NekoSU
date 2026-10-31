@@ -83,6 +83,7 @@ import com.nekosu.ui.screen.DynamicManagerScreen
 import com.nekosu.ui.screen.ExecuteModuleActionScreen
 import com.nekosu.ui.screen.FlashIt
 import com.nekosu.ui.screen.KmiDiagnosticsScreen
+import com.nekosu.ui.screen.ManualLoadGuideScreen
 import com.nekosu.ui.screen.MagicaLogScreen
 import com.nekosu.ui.screen.FlashScreen
 import com.nekosu.ui.screen.ScriptRunScreen
@@ -576,6 +577,17 @@ fun NavContainer(
                     useBlur = useBlur,
                 ) {
                     DynamicManagerScreen()
+                }
+            }
+            entry<Route.ManualLoadGuide>(swipeDismiss = swipeBackDirection) {
+                ManagerNavEntry(
+                    interceptPredictiveBack = interceptPredictiveBack,
+                    onBack = onBack,
+                    themeConfig = themeConfig,
+                    backgroundRenderState = backgroundRenderState,
+                    useBlur = useBlur,
+                ) {
+                    ManualLoadGuideScreen()
                 }
             }
             entry<Route.KmiDiagnostics>(swipeDismiss = swipeBackDirection) {

@@ -544,6 +544,17 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Adb,
+                                title = stringResource(R.string.guide_title),
+                                description = stringResource(R.string.guide_summary),
+                                onClick = {
+                                    navigator.push(Route.ManualLoadGuide)
+                                },
+                            )
+                        }
+
                         if (homeState.systemStatus.isFullFeatured) {
                             item {
                                 SettingsJumpPageWidget(

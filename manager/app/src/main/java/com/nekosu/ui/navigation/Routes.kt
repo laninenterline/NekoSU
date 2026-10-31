@@ -147,5 +147,9 @@ sealed interface Route :
 
     @Parcelize
     @Serializable
+    data object ManualLoadGuide : Route
+
+    @Parcelize
+    @Serializable
     data object DynamicManager : Route
 }

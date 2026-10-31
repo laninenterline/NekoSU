@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -48,6 +49,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.ModalBottomSheet
@@ -157,7 +159,8 @@ fun ModuleRepoScreen(repositoryUrl: String? = null) {
     val scrollBehavior = rememberSearchAppBarScrollBehavior(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(topAppBarState),
     )
-    val moduleListState = key(uiState.repositoryUrl, uiState.sortStargazerCountFirst, uiState.search) {
+    var selectedTag by remember { mutableStateOf<String?>(null) }
+    val moduleListState = key(uiState.repositoryUrl, uiState.sortStargazerCountFirst, uiState.search, selectedTag) {
         rememberLazyListState()
     }
     var showSortDropdown by remember { mutableStateOf(false) }
@@ -290,6 +293,18 @@ fun ModuleRepoScreen(repositoryUrl: String? = null) {
                 )
             },
         ) {
+            val allTags = remember(uiState.modules) {
+                uiState.modules.flatMap { it.registryMetadata?.tags.orEmpty() }
+                    .filter { it.isNotBlank() }
+                    .distinct()
+                    .sorted()
+                    .take(16)
+            }
+            val shownModules = if (selectedTag == null) {
+                uiState.modules
+            } else {
+                uiState.modules.filter { it.registryMetadata?.tags?.contains(selectedTag!!) == true }
+            }
             when (uiState.content) {
                 CatalogContent.MODULES -> LazyColumn(
                     state = moduleListState,
@@ -309,7 +324,20 @@ fun ModuleRepoScreen(repositoryUrl: String? = null) {
                             TextButton(onClick = refreshModules) { Text(failures.map { repositoryErrorText(it) }.joinToString("\n")) }
                         }
                     }
-                    items(uiState.modules, key = { it.catalogId }) { module ->
+                    if (allTags.isNotEmpty()) {
+                        item {
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(allTags) { tag ->
+                                    FilterChip(
+                                        selected = selectedTag == tag,
+                                        onClick = { selectedTag = if (selectedTag == tag) null else tag },
+                                        label = { Text(tag) },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    items(shownModules, key = { it.catalogId }) { module ->
                         OnlineModuleItem(
                             module = module,
                             onQuickInstall = { quickInstall(module) },
