@@ -65,6 +65,7 @@ jobs:
           export CC_aarch64_linux_android="$NDKBIN/aarch64-linux-android29-clang"
           export CXX_aarch64_linux_android="$NDKBIN/aarch64-linux-android29-clang++"
           export AR_aarch64_linux_android="$NDKBIN/llvm-ar"
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDKBIN/aarch64-linux-android29-clang"
           # bindgen must cross-compile headers against the NDK sysroot
           SYSROOT="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
           export BINDGEN_EXTRA_CLANG_ARGS="--target=aarch64-linux-android --sysroot=$SYSROOT"
