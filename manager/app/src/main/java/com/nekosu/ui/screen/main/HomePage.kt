@@ -61,6 +61,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
@@ -94,6 +96,7 @@ import com.nekosu.domain.model.KernelStatus
 import com.nekosu.domain.model.ManagerUpdateChannel
 import com.nekosu.domain.model.ManagerUpdateInfo
 import com.nekosu.domain.usecase.EnqueueManagerUpdateUseCase
+import com.nekosu.magica.MagicaCompat
 import com.nekosu.magica.MagicaService
 import com.nekosu.ui.component.KsuIsValid
 import com.nekosu.ui.component.SwipeableSnackbarHost
@@ -133,6 +136,15 @@ fun HomePage(
     val context = LocalContext.current
     val viewModel = koinViewModel<HomeViewModel>()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    var showMagicaConfirm by remember { mutableStateOf(false) }
+    var showMagicaBlocked by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.systemStatus.isRootAvailable) {
+        if (uiState.systemStatus.isRootAvailable) MagicaCompat.clear(context)
+    }
+    LaunchedEffect(Unit) {
+        if (MagicaCompat.consumeRebootFlag(context)) showMagicaBlocked = true
+    }
 
     LaunchedEffect(Unit) {
         viewModel.dispatch(HomeUiAction.AwaitInitialData)
@@ -299,20 +311,70 @@ fun HomePage(
                 StatusCard(
                     uiState = uiState,
                     onClickJailbreak = {
-                        loadingDialog.showLoading()
-                        context.startService(Intent(context, MagicaService::class.java))
-                        // Manager will be force-stopped and restarted by late-load on success.
-                        // If that doesn't happen within timeout, jailbreak likely failed.
-                        scope.launch(Dispatchers.IO) {
-                            delay(30_000.milliseconds)
-                            withContext(Dispatchers.Main) {
-                                loadingDialog.hide()
-                                Toast.makeText(
-                                    context,
-                                    R.string.jailbreak_timeout,
-                                    Toast.LENGTH_LONG,
-                                ).show()
+                        if (MagicaCompat.wasRebootedAfterAttempt(context)) {
+                            showMagicaBlocked = true
+                        } else {
+                            showMagicaConfirm = true
+                        }
+                    },
+                )
+            }
+            if (showMagicaConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showMagicaConfirm = false },
+                    title = { Text(stringResource(R.string.magica_compat_title)) },
+                    text = {
+                        Text(
+                            stringResource(
+                                R.string.magica_compat_message,
+                                MagicaCompat.deviceSummary(),
+                                context.packageName,
+                            ),
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showMagicaConfirm = false
+                            MagicaCompat.markAttempt(context)
+                            loadingDialog.showLoading()
+                            context.startService(Intent(context, MagicaService::class.java))
+                            // Manager will be force-stopped and restarted by late-load on success.
+                            // If that doesn't happen within timeout, jailbreak likely failed.
+                            scope.launch(Dispatchers.IO) {
+                                delay(30_000.milliseconds)
+                                withContext(Dispatchers.Main) {
+                                    loadingDialog.hide()
+                                    Toast.makeText(
+                                        context,
+                                        R.string.jailbreak_timeout,
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                                }
                             }
+                        }) { Text(stringResource(R.string.magica_compat_continue)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showMagicaConfirm = false }) {
+                            Text(stringResource(android.R.string.cancel))
+                        }
+                    },
+                )
+            }
+            if (showMagicaBlocked) {
+                AlertDialog(
+                    onDismissRequest = { showMagicaBlocked = false },
+                    title = { Text(stringResource(R.string.magica_manual_title)) },
+                    text = {
+                        Text(
+                            stringResource(
+                                R.string.magica_blocked_message,
+                                context.packageName,
+                            ),
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showMagicaBlocked = false }) {
+                            Text(androidx.compose.ui.res.stringResource(android.R.string.ok))
                         }
                     },
                 )

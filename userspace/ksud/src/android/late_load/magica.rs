@@ -33,6 +33,33 @@ fn exec_shell_commands(commands: &[(&str, &[&str])], log_prefix: &str) -> Result
     Ok(())
 }
 
+fn getprop(name: &str) -> Option<String> {
+    let output = Command::new("getprop").arg(name).output().ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+/// Best-effort rollback of the property changes made by [enable_adb_root].
+fn restore_props(
+    rp: &ResetProp,
+    props_serial: &str,
+    debuggable_context: &str,
+    adb_secure_context: &str,
+) {
+    let _ = exec_shell_commands(
+        &[
+            ("chmod", &["0444", props_serial]),
+            ("chmod", &["0444", debuggable_context]),
+            ("chmod", &["0444", adb_secure_context]),
+        ],
+        "Restoring",
+    );
+    let _ = rp.set("ro.debuggable", "0");
+    let _ = rp.set("ro.adb.secure", "1");
+}
+
 fn enable_adb_root(port: u16) -> Result<()> {
     // We are in limited root by magica
     anyhow::ensure!(
@@ -52,42 +79,73 @@ fn enable_adb_root(port: u16) -> Result<()> {
     info!("ro.adb.secure context: {adb_secure_context}");
 
     let props_serial = "/dev/__properties__/properties_serial";
-    let debuggable_context = format!("/dev/__properties__/{debuggable_context}");
-    let adb_secure_context = format!("/dev/__properties__/{adb_secure_context}");
+    let debuggable_context_path = format!("/dev/__properties__/{debuggable_context}");
+    let adb_secure_context_path = format!("/dev/__properties__/{adb_secure_context}");
     let port_str = port.to_string();
 
-    // chmod property files to writable
-    exec_shell_commands(
-        &[
-            ("chmod", &["0644", props_serial]),
-            ("chmod", &["0644", &debuggable_context]),
-            ("chmod", &["0644", &adb_secure_context]),
-        ],
-        "Executing",
-    )?;
+    // On userdebug / debuggable ROMs adbd already accepts `adb root`; rewriting
+    // the ro.* property files is what triggers tamper detection on some OEM
+    // ROMs, so skip it when it is not needed.
+    let already_debuggable = getprop("ro.debuggable").as_deref() == Some("1");
+    info!("ro.debuggable already set: {already_debuggable}");
 
-    // Set properties via internal API
-    rp.set("ro.debuggable", "1")
-        .context("Failed to set ro.debuggable")?;
-    info!("Executing: resetprop -n ro.debuggable 1");
-    rp.set("ro.adb.secure", "0")
-        .context("Failed to set ro.adb.secure")?;
-    info!("Executing: resetprop -n ro.adb.secure 0");
+    let result: Result<()> = (|| {
+        if !already_debuggable {
+            // chmod property files to writable
+            exec_shell_commands(
+                &[
+                    ("chmod", &["0644", props_serial]),
+                    ("chmod", &["0644", &debuggable_context_path]),
+                    ("chmod", &["0644", &adb_secure_context_path]),
+                ],
+                "Executing",
+            )?;
 
-    // Restore permissions and restart adbd
-    exec_shell_commands(
-        &[
-            ("chmod", &["0444", props_serial]),
-            ("chmod", &["0444", &debuggable_context]),
-            ("chmod", &["0444", &adb_secure_context]),
-            ("setprop", &["service.adb.root", "1"]),
-            ("setprop", &["service.adb.tcp.port", &port_str]),
-            ("setprop", &["ctl.restart", "adbd"]),
-        ],
-        "Executing",
-    )?;
+            rp.set("ro.debuggable", "1")
+                .context("Failed to set ro.debuggable")?;
+            info!("Executing: resetprop -n ro.debuggable 1");
+            rp.set("ro.adb.secure", "0")
+                .context("Failed to set ro.adb.secure")?;
+            info!("Executing: resetprop -n ro.adb.secure 0");
 
-    Ok(())
+            // Restore permissions before restarting adbd
+            exec_shell_commands(
+                &[
+                    ("chmod", &["0444", props_serial]),
+                    ("chmod", &["0444", &debuggable_context_path]),
+                    ("chmod", &["0444", &adb_secure_context_path]),
+                ],
+                "Executing",
+            )?;
+        }
+
+        exec_shell_commands(
+            &[
+                ("setprop", &["service.adb.root", "1"]),
+                ("setprop", &["service.adb.tcp.port", &port_str]),
+                ("setprop", &["ctl.restart", "adbd"]),
+            ],
+            "Executing",
+        )?;
+
+        Ok(())
+    })();
+
+    if result.is_err() {
+        // Never leave the device with half-modified adbd properties: that is
+        // what turns a failed attempt into a boot loop on stricter ROMs.
+        if !already_debuggable {
+            restore_props(
+                &rp,
+                props_serial,
+                &debuggable_context_path,
+                &adb_secure_context_path,
+            );
+        }
+        let _ = exec_shell_commands(&[("setprop", &["ctl.restart", "adbd"])], "Restoring");
+    }
+
+    result
 }
 
 pub fn disable_adb_root() -> Result<()> {

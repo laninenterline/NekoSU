@@ -678,4 +678,9 @@
     <string name="superuser_root_access_required">Root access is required to load applications.</string>
     <string name="superuser_service_start_failed">RootService failed to start. Retry to load applications.</string>
     <string name="superuser_packages_load_failed">Failed to load applications from RootService. Please retry.</string>
+    <string name="magica_compat_title">Jailbreak compatibility</string>
+    <string name="magica_compat_message">This will attempt the Magica bootstrap on %1$s.\n\nOn some OEM ROMs modifying adbd properties can force a reboot. If the device reboots, one-tap jailbreak is disabled automatically and a manual command is shown instead.\n\nManual alternative: late-load with package name %2$s after gaining temporary root.</string>
+    <string name="magica_compat_continue">Try anyway</string>
+    <string name="magica_manual_title">Manual late-load</string>
+    <string name="magica_blocked_message">A previous jailbreak attempt appears to have rebooted this device. One-tap jailbreak is now disabled to prevent reboot loops.\n\nManual option: get temporary root with your usual exploit, then run:\n\nksud late-load --allow-shell --package-name %1$s</string>
 </resources>

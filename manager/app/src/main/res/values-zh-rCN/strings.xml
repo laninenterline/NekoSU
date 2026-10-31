@@ -674,4 +674,9 @@
     <string name="home_temp_root_inactive">临时 root 未激活</string>
     <string name="home_temp_root_inactive_hint">本版本仅支持临时 root。请使用外部工具加载内核模块（或使用 Jailbreak），然后重新打开本应用。</string>
     <string name="temp_root_kernel_install_disabled">本版本仅支持临时 root，已禁用内核安装。</string>
+    <string name="magica_compat_title">一键越狱兼容性提示</string>
+    <string name="magica_compat_message">将在 %1$s 上尝试 Magica 引导。\n\n部分厂商 ROM 会因 adbd 属性被修改而强制重启；若本次尝试导致重启，一键越狱会自动停用并改为提示手动命令。\n\n手动方案：获得临时 root 后执行 late-load（包名 %2$s）。</string>
+    <string name="magica_compat_continue">仍要尝试</string>
+    <string name="magica_manual_title">手动 late-load</string>
+    <string name="magica_blocked_message">检测到上次一键越狱后设备发生了重启，已停用一键越狱以避免反复重启。\n\n手动方案：用你惯用的方式获得临时 root，然后执行：\n\nksud late-load --allow-shell --package-name %1$s</string>
 </resources>
