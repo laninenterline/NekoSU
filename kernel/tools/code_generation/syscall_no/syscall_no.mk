@@ -15,8 +15,10 @@ KSU_SYSCALL_FLAGS := $(if $(CONFIG_COMPAT),--arm64-compat,--arm64)
 endif
 
 ifeq ($(ARCH),arm64)
-ifneq ($(shell test $(VERSION) -gt 6 -o \( $(VERSION) -eq 6 -a $(PATCHLEVEL) -ge 11 \) || grep -q "__NR_compat32_syscalls" $(srctree)/arch/arm64/kernel/sys32.c 2>/dev/null; echo $$?),0)
 ifeq ($(CONFIG_COMPAT),y)
+# Prefer the source-tree compat syscall table when present (arm64 <= 6.10);
+# newer kernels generate asm/unistd_compat_32.h during prepare instead.
+ifneq ($(wildcard $(srctree)/arch/arm64/include/asm/unistd32.h),)
 KSU_UNISTD32_ARG := $(srctree)/arch/arm64/include/asm/unistd32.h
 endif
 endif

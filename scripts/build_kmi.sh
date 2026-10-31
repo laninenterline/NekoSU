@@ -98,7 +98,9 @@ fi
 # clean stale in-tree generated module artifacts from previous manual builds
 rm -f "$ROOT"/kernel/kernelsu.mod.c "$ROOT"/kernel/kernelsu.mod \
       "$ROOT"/kernel/kernelsu.o "$ROOT"/kernel/kernelsu.ko \
-      "$ROOT"/kernel/modules.order "$ROOT"/kernel/.module-common.o 2>/dev/null || true
+      "$ROOT"/kernel/modules.order "$ROOT"/kernel/.module-common.o \
+      "$ROOT"/kernel/compat/syscall_no.h 2>/dev/null || true
+rm -f "$ROOT/out/kmi-$T/compat/syscall_no.h" "$ROOT/out/kmi-$T/kernelsu.mod.c" 2>/dev/null || true
 
 # 4) native host tools
 make -C "$KDIR" ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig </dev/null > $LOGDIR/kmi-$T-tools.log 2>&1 || true

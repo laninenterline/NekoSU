@@ -158,3 +158,6 @@
 - [x] 构建脚本修复 6.12 modpost 空 `__version_ext_names`（输出 `= ""`）
 - [x] `android16-6.12` 的 kernelsu.ko + SUSFS ko 编译验证通过
 - [ ] `feature/adb_root.*`、`hook/arm64/syscall_hook.c`、`manager/throne_tracker.*` 等需连同调用方一起移植上游重构版
+- [x] `kernel/tools/code_generation/syscall_no/syscall_no.mk`：旧式内核（≤6.10）按源码树 `unistd32.h` 传入 compat 表，修复 `asm/unistd_compat_32.h` 缺失
+- [x] `scripts/build_kmi.sh`：构建前清理内核树里旧的 `compat/syscall_no.h` / `kernelsu.mod.c`
+- [x] `android14-6.1`（旧式 Kbuild）编译验证通过
