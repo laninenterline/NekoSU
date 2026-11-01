@@ -5,12 +5,6 @@
     <color name="ic_launcher_background">#FFFFFF</color>
     <color name="ic_launcher_alt_background">#FFFFFF</color>
     <color name="ic_launcher_alt_foreground">#FF1E110D</color>
-    <color name="ic_launcher_v2_foreground">#FF3B82F6</color>
-    <color name="ic_launcher_v2_background">#FFFFFFFF</color>
-    <color name="ic_launcher_v3_foreground">#FF22C55E</color>
-    <color name="ic_launcher_v3_background">#FFFFFFFF</color>
-    <color name="ic_launcher_v4_foreground">#FFA855F7</color>
-    <color name="ic_launcher_v4_background">#FFFFFFFF</color>
-    <color name="ic_launcher_v5_foreground">#FFEF4444</color>
-    <color name="ic_launcher_v5_background">#FFFFFFFF</color>
+    <color name="ic_launcher_resuki_background">#FFF2F2F2</color>
+    <color name="ic_launcher_fina_background">#FFFFFFFF</color>
 </resources>
