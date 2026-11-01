@@ -19,7 +19,6 @@ fun settingSearchEntries(): List<SettingSearchEntry> = listOf(
     SettingSearchEntry(R.string.block_modules_title, R.string.block_modules_summary, Route.BlockModules, "block modules title block modules summary"),
     SettingSearchEntry(R.string.kmi_diag_title, R.string.kmi_diag_summary, Route.KmiDiagnostics, "kmi diag title kmi diag summary"),
     SettingSearchEntry(R.string.magica_log_title, R.string.magica_log_summary, Route.MagicaLog, "magica log title magica log summary"),
-    SettingSearchEntry(R.string.guide_title, R.string.guide_summary, Route.ManualLoadGuide, "guide title guide summary"),
     SettingSearchEntry(R.string.multi_manager_title, R.string.multi_manager_summary, Route.MultiManager, "multi manager title multi manager summary"),
     SettingSearchEntry(R.string.susfs_presets_title, R.string.susfs_presets_summary, Route.SusfsPresets, "susfs presets title susfs presets summary"),
     SettingSearchEntry(R.string.custom_lkm_title, R.string.custom_lkm_summary, Route.CustomLkm, "custom lkm title custom lkm summary"),

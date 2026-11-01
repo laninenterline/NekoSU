@@ -51,7 +51,6 @@ fun SettingsSearchScreen() {
         SearchEntry(stringResource(R.string.block_modules_title), stringResource(R.string.block_modules_summary), Route.BlockModules),
         SearchEntry(stringResource(R.string.kmi_diag_title), stringResource(R.string.kmi_diag_summary), Route.KmiDiagnostics),
         SearchEntry(stringResource(R.string.magica_log_title), stringResource(R.string.magica_log_summary), Route.MagicaLog),
-        SearchEntry(stringResource(R.string.guide_title), stringResource(R.string.guide_summary), Route.ManualLoadGuide),
         SearchEntry(stringResource(R.string.susfs_presets_title), stringResource(R.string.susfs_presets_summary), Route.SusfsPresets),
         SearchEntry(stringResource(R.string.custom_lkm_title), stringResource(R.string.custom_lkm_summary), Route.CustomLkm),
         SearchEntry(stringResource(R.string.multi_manager_title), stringResource(R.string.multi_manager_summary), Route.MultiManager),

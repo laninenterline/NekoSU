@@ -147,10 +147,6 @@ sealed interface Route :
 
     @Parcelize
     @Serializable
-    data object ManualLoadGuide : Route
-
-    @Parcelize
-    @Serializable
     data object SettingsSearch : Route
 
     @Parcelize

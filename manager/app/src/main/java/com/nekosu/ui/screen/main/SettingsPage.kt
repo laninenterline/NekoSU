@@ -657,17 +657,6 @@ fun SettingsPage(bottomPadding: Dp) {
 
                         item {
                             SettingsJumpPageWidget(
-                                icon = Icons.TwoTone.Adb,
-                                title = stringResource(R.string.guide_title),
-                                description = stringResource(R.string.guide_summary),
-                                onClick = {
-                                    navigator.push(Route.ManualLoadGuide)
-                                },
-                            )
-                        }
-
-                        item {
-                            SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Groups,
                                 title = stringResource(R.string.multi_manager_title),
                                 description = stringResource(R.string.multi_manager_summary),
