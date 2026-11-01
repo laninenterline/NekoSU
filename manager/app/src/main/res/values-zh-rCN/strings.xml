@@ -711,4 +711,5 @@
     <string name="app_icon_variant_resuki">ReSukiSU</string>
     <string name="app_icon_variant_fina">FinaSU</string>
     <string name="app_icon_variant_bakasu">BakaSU</string>
+    <string name="block_modules_save_failed">保存失败：请确认管理器已获得 root 权限</string>
 </resources>

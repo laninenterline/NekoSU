@@ -81,6 +81,7 @@ fun BlockModulesScreen() {
     var loadedModules by remember { mutableStateOf(emptyList<String>()) }
     val savedMessage = stringResource(R.string.block_modules_saved)
     val invalidMessage = stringResource(R.string.block_modules_invalid)
+    val saveFailedMessage = stringResource(R.string.block_modules_save_failed)
 
     LaunchedEffect(Unit) {
         val current = withContext(Dispatchers.IO) {
@@ -101,16 +102,32 @@ fun BlockModulesScreen() {
     }
 
     fun save(value: String) {
-        if (!validBlockModules(value)) {
+        // tolerate spaces around commas, then validate the normalized form
+        val normalized = value.split(',').map { it.trim() }.filter { it.isNotEmpty() }.joinToString(",")
+        if (!validBlockModules(normalized)) {
             scope.launch { snackBarHost.showReplacingSnackbar(invalidMessage) }
             return
         }
         scope.launch(Dispatchers.IO) {
-            val command = "mkdir -p /data/adb/ksu && printf %s ${shellQuote(value)} > $CONFIG_PATH " +
-                "&& chmod 600 $CONFIG_PATH"
-            val ok = ShellUtils.fastCmdResult(repository.getRootShell(), command)
+            val shell = repository.getRootShell()
+            val result = runCatching {
+                shell.newJob()
+                    .add("mkdir -p /data/adb/ksu")
+                    .add("printf '%s' ${shellQuote(normalized)} > $CONFIG_PATH")
+                    .add("chmod 600 $CONFIG_PATH")
+                    .exec()
+            }.getOrNull()
+            val wrote = result?.isSuccess == true && runCatching {
+                ShellUtils.fastCmd(shell, "cat $CONFIG_PATH 2>/dev/null").trim() == normalized
+            }.getOrDefault(false)
             withContext(Dispatchers.Main) {
-                snackBarHost.showReplacingSnackbar(if (ok) savedMessage else invalidMessage)
+                snackBarHost.showReplacingSnackbar(
+                    when {
+                        wrote -> savedMessage
+                        result?.isSuccess == true -> invalidMessage
+                        else -> saveFailedMessage
+                    },
+                )
             }
         }
     }
