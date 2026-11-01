@@ -155,10 +155,6 @@ sealed interface Route :
 
     @Parcelize
     @Serializable
-    data object MultiManager : Route
-
-    @Parcelize
-    @Serializable
     data object CustomLkm : Route
 
     @Parcelize

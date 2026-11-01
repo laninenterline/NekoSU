@@ -658,17 +658,6 @@ fun SettingsPage(bottomPadding: Dp) {
 
                         item {
                             SettingsJumpPageWidget(
-                                icon = Icons.TwoTone.Groups,
-                                title = stringResource(R.string.multi_manager_title),
-                                description = stringResource(R.string.multi_manager_summary),
-                                onClick = {
-                                    navigator.push(Route.MultiManager)
-                                },
-                            )
-                        }
-
-                        item {
-                            SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Fence,
                                 title = stringResource(R.string.custom_lkm_title),
                                 description = stringResource(R.string.custom_lkm_summary),
@@ -704,8 +693,8 @@ fun SettingsPage(bottomPadding: Dp) {
                             item {
                                 SettingsJumpPageWidget(
                                     icon = Icons.TwoTone.Security,
-                                    title = stringResource(R.string.dynamic_manager_title),
-                                    description = stringResource(R.string.dynamic_manager_settings_summary),
+                                    title = stringResource(R.string.manager_config_title),
+                                    description = stringResource(R.string.manager_config_summary),
                                     onClick = {
                                         navigator.push(Route.DynamicManager)
                                     },

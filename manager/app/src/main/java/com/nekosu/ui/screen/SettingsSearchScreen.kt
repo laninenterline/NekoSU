@@ -52,7 +52,6 @@ fun SettingsSearchScreen() {
         SearchEntry(stringResource(R.string.kmi_diag_title), stringResource(R.string.kmi_diag_summary), Route.KmiDiagnostics),
         SearchEntry(stringResource(R.string.magica_log_title), stringResource(R.string.magica_log_summary), Route.MagicaLog),
         SearchEntry(stringResource(R.string.custom_lkm_title), stringResource(R.string.custom_lkm_summary), Route.CustomLkm),
-        SearchEntry(stringResource(R.string.multi_manager_title), stringResource(R.string.multi_manager_summary), Route.MultiManager),
         SearchEntry(stringResource(R.string.app_icon_title), stringResource(R.string.app_icon_summary), Route.AppIcon),
         SearchEntry(stringResource(R.string.theme_settings), stringResource(R.string.theme_settings), Route.ThemeSettings),
         SearchEntry(stringResource(R.string.dynamic_manager_title), stringResource(R.string.dynamic_manager_settings_summary), Route.DynamicManager),

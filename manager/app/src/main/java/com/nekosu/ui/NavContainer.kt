@@ -84,7 +84,6 @@ import com.nekosu.ui.screen.DynamicManagerScreen
 import com.nekosu.ui.screen.ExecuteModuleActionScreen
 import com.nekosu.ui.screen.FlashIt
 import com.nekosu.ui.screen.KmiDiagnosticsScreen
-import com.nekosu.ui.screen.MultiManagerScreen
 import com.nekosu.ui.screen.AppIconScreen
 import com.nekosu.ui.screen.SettingsSearchScreen
 import com.nekosu.ui.screen.MagicaLogScreen
@@ -613,17 +612,6 @@ fun NavContainer(
                     useBlur = useBlur,
                 ) {
                     AppIconScreen()
-                }
-            }
-            entry<Route.MultiManager>(swipeDismiss = swipeBackDirection) {
-                ManagerNavEntry(
-                    interceptPredictiveBack = interceptPredictiveBack,
-                    onBack = onBack,
-                    themeConfig = themeConfig,
-                    backgroundRenderState = backgroundRenderState,
-                    useBlur = useBlur,
-                ) {
-                    MultiManagerScreen()
                 }
             }
             entry<Route.KmiDiagnostics>(swipeDismiss = swipeBackDirection) {

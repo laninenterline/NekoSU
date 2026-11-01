@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.Groups
 import androidx.compose.material.icons.twotone.Delete
 import androidx.compose.material.icons.twotone.Edit
 import androidx.compose.material.icons.twotone.Security
@@ -72,6 +74,7 @@ import com.nekosu.ui.viewmodel.DynamicManagerOperation
 import com.nekosu.ui.viewmodel.DynamicManagerUiAction
 import com.nekosu.ui.viewmodel.DynamicManagerUiEvent
 import com.nekosu.ui.viewmodel.DynamicManagerViewModel
+import com.nekosu.ui.viewmodel.HomeViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -79,6 +82,8 @@ import org.koin.compose.viewmodel.koinViewModel
 fun DynamicManagerScreen() {
     val navigator = LocalNavigator.current
     val viewModel = koinViewModel<DynamicManagerViewModel>()
+    val homeViewModel = koinViewModel<HomeViewModel>()
+    val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = rememberSearchAppBarScrollBehavior(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState()),
@@ -224,6 +229,13 @@ fun DynamicManagerScreen() {
                             onClearConfig = {
                                 runClearOperation()
                             },
+                        )
+                    }
+
+                    item {
+                        AcceptedManagersSection(
+                            managers = homeState.systemInfo.managersList?.managers.orEmpty(),
+                            dynamicSignatureEnabled = homeState.systemInfo.managersList?.dynamicSignatureEnabled == true,
                         )
                     }
 
@@ -460,4 +472,51 @@ private fun DynamicManagerManualDialog(
             }
         },
     )
+}
+
+@Composable
+private fun AcceptedManagersSection(
+    managers: List<com.nekosu.domain.model.ManagerRecord>,
+    dynamicSignatureEnabled: Boolean,
+) {
+    SegmentedColumn(
+        title = stringResource(R.string.multi_manager_title),
+    ) {
+        item {
+            Text(
+                stringResource(R.string.multi_manager_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        item {
+            Text(
+                stringResource(
+                    R.string.multi_manager_dynamic_signature,
+                    if (dynamicSignatureEnabled) "ON" else "OFF",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (managers.isEmpty()) {
+            item {
+                Text(
+                    stringResource(R.string.multi_manager_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        } else {
+            managers.forEach { record ->
+                item {
+                    SettingsBaseWidget(
+                        icon = Icons.TwoTone.Groups,
+                        title = "UID ${record.uid}",
+                        description = stringResource(R.string.multi_manager_signature_index, record.signatureIndex),
+                        onClick = {},
+                    )
+                }
+            }
+        }
+    }
 }

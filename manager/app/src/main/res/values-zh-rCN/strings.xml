@@ -682,4 +682,6 @@
     <string name="susfs_preset_builtin_desc">启用 SUSFS、对非 su 进程隐藏挂载、AVC 日志伪装，并隐藏 /data/adb/modules 与 /data/adb/ksu</string>
     <string name="debug_features_unlocked">已解锁开发者功能（root 相关入口已显示）</string>
     <string name="about_app_icon"><![CDATA[App 图标版权归 %1$s 所有，保留所有权利]]></string>
+    <string name="manager_config_title">管理器配置</string>
+    <string name="manager_config_summary">查看内核接受的管理器，并管理动态管理器签名</string>
 </resources>
