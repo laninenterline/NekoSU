@@ -668,17 +668,6 @@ fun SettingsPage(bottomPadding: Dp) {
 
                         item {
                             SettingsJumpPageWidget(
-                                icon = Icons.TwoTone.Tune,
-                                title = stringResource(R.string.susfs_presets_title),
-                                description = stringResource(R.string.susfs_presets_summary),
-                                onClick = {
-                                    navigator.push(Route.SusfsPresets)
-                                },
-                            )
-                        }
-
-                        item {
-                            SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Fence,
                                 title = stringResource(R.string.custom_lkm_title),
                                 description = stringResource(R.string.custom_lkm_summary),

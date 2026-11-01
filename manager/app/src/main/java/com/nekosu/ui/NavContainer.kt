@@ -84,7 +84,6 @@ import com.nekosu.ui.screen.DynamicManagerScreen
 import com.nekosu.ui.screen.ExecuteModuleActionScreen
 import com.nekosu.ui.screen.FlashIt
 import com.nekosu.ui.screen.KmiDiagnosticsScreen
-import com.nekosu.ui.screen.SusfsPresetsScreen
 import com.nekosu.ui.screen.MultiManagerScreen
 import com.nekosu.ui.screen.AppIconScreen
 import com.nekosu.ui.screen.SettingsSearchScreen
@@ -625,17 +624,6 @@ fun NavContainer(
                     useBlur = useBlur,
                 ) {
                     MultiManagerScreen()
-                }
-            }
-            entry<Route.SusfsPresets>(swipeDismiss = swipeBackDirection) {
-                ManagerNavEntry(
-                    interceptPredictiveBack = interceptPredictiveBack,
-                    onBack = onBack,
-                    themeConfig = themeConfig,
-                    backgroundRenderState = backgroundRenderState,
-                    useBlur = useBlur,
-                ) {
-                    SusfsPresetsScreen()
                 }
             }
             entry<Route.KmiDiagnostics>(swipeDismiss = swipeBackDirection) {

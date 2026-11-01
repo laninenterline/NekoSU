@@ -97,6 +97,7 @@ sealed interface SuSFSUiAction {
     data class RemoveSusMap(val path: String, val reply: SuSFSCommandReply? = null) : SuSFSUiAction
     data class ExportConfig(val uri: String, val reply: SuSFSCommandReply? = null) : SuSFSUiAction
     data class ImportConfig(val uri: String, val reply: SuSFSCommandReply? = null) : SuSFSUiAction
+    data class ApplyBuiltinPreset(val reply: SuSFSCommandReply? = null) : SuSFSUiAction
 }
 
 sealed interface SuSFSCommandResult {
@@ -241,6 +242,20 @@ class SuSFSViewModel(
 
             is SuSFSUiAction.ExportConfig -> viewModelScope.launch {
                 executeBoolean(action.reply) { configUseCase.exportConfig(action.uri) }
+            }
+
+            is SuSFSUiAction.ApplyBuiltinPreset -> viewModelScope.launch {
+                executeBoolean(action.reply) {
+                    val enabled = configUseCase.setConfigEnabled(true)
+                    if (enabled) {
+                        configUseCase.hideSusMntsForNonSuProcs(true)
+                        configUseCase.enableAvcLogSpoofing(true)
+                        configUseCase.enableLog(false)
+                        configUseCase.addSusPath("/data/adb/modules")
+                        configUseCase.addSusPath("/data/adb/ksu")
+                    }
+                    enabled
+                }
             }
 
             is SuSFSUiAction.ImportConfig -> viewModelScope.launch {

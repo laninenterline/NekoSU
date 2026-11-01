@@ -159,10 +159,6 @@ sealed interface Route :
 
     @Parcelize
     @Serializable
-    data object SusfsPresets : Route
-
-    @Parcelize
-    @Serializable
     data object CustomLkm : Route
 
     @Parcelize

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.twotone.Tune
 import androidx.compose.material.icons.twotone.Info
 import androidx.compose.material.icons.twotone.RestartAlt
 import androidx.compose.material.icons.twotone.Restore
@@ -163,6 +164,8 @@ fun BackupRestoreSection(
     val exportFailedMsg = stringResource(R.string.susfs_backup_export_failed)
     val importSuccessMsg = stringResource(R.string.susfs_backup_import_success)
     val importFailedMsg = stringResource(R.string.susfs_backup_import_failed)
+    val builtinPresetTitle = stringResource(R.string.susfs_preset_builtin_title)
+    val builtinPresetDesc = stringResource(R.string.susfs_preset_builtin_desc)
     val restoreDefaultTitle = stringResource(R.string.susfs_backup_restore_default)
     val restoreDefaultDesc = stringResource(R.string.susfs_backup_restore_default_desc)
     val confirmTitle = stringResource(R.string.susfs_backup_import_confirm_title)
@@ -213,6 +216,16 @@ fun BackupRestoreSection(
                 onClick = {
                     importLauncher.launch(arrayOf("application/json"))
                 },
+            )
+        }
+        item {
+            BuiltinPresetRow(
+                title = builtinPresetTitle,
+                description = builtinPresetDesc,
+                snackbarHost = snackbarHost,
+                operationSuccessMsg = operationSuccessMsg,
+                operationFailedMsg = operationFailedMsg,
+                onConfigRestored = onConfigRestored,
             )
         }
         item {
@@ -290,6 +303,35 @@ private fun RestoreDefaultRow(
             scope.launch {
                 val ok = awaitSuSFSBoolean(configHelper) { reply ->
                     SuSFSUiAction.RestoreDefault(reply)
+                }
+                if (ok) {
+                    onConfigRestored()
+                }
+                snackbarHost.showReplacingSnackbar(if (ok) operationSuccessMsg else operationFailedMsg)
+            }
+        },
+    )
+}
+
+@Composable
+private fun BuiltinPresetRow(
+    title: String,
+    description: String,
+    snackbarHost: SnackbarHostState,
+    operationSuccessMsg: String,
+    operationFailedMsg: String,
+    onConfigRestored: () -> Unit,
+) {
+    val viewModel = koinViewModel<SuSFSViewModel>()
+    val scope = rememberCoroutineScope()
+    SettingsJumpPageWidget(
+        icon = Icons.TwoTone.Tune,
+        title = title,
+        description = description,
+        onClick = {
+            scope.launch {
+                val ok = awaitSuSFSBoolean(viewModel) { reply ->
+                    SuSFSUiAction.ApplyBuiltinPreset(reply)
                 }
                 if (ok) {
                     onConfigRestored()
