@@ -333,6 +333,18 @@ fun SettingsPage(bottomPadding: Dp) {
                             }
 
                             item {
+                                // 内核模块黑名单（预设不加载的内核模块）
+                                SettingsJumpPageWidget(
+                                    icon = Icons.TwoTone.RemoveModerator,
+                                    title = stringResource(R.string.block_modules_title),
+                                    description = stringResource(R.string.block_modules_summary),
+                                    onClick = {
+                                        navigator.push(Route.BlockModules)
+                                    },
+                                )
+                            }
+
+                            item {
                                 val suSummary = when (uiState.suStatus) {
                                     "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
                                     "managed" -> stringResource(id = R.string.feature_status_managed_summary)
@@ -618,17 +630,6 @@ fun SettingsPage(bottomPadding: Dp) {
                                     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm")
                                     val current = LocalDateTime.now().format(formatter)
                                     exportProblemLogLauncher.launch("NekoSU_problem_$current.txt")
-                                },
-                            )
-                        }
-
-                        item {
-                            SettingsJumpPageWidget(
-                                icon = Icons.TwoTone.RemoveModerator,
-                                title = stringResource(R.string.block_modules_title),
-                                description = stringResource(R.string.block_modules_summary),
-                                onClick = {
-                                    navigator.push(Route.BlockModules)
                                 },
                             )
                         }
