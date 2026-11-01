@@ -22,6 +22,7 @@ object IconVariants {
         Variant(R.string.app_icon_variant_next, R.mipmap.ic_launcher_alt3, R.mipmap.ic_launcher_alt3, "com.nekosu.ui.MainActivityAlias3"),
         Variant(R.string.app_icon_variant_resuki, R.mipmap.ic_launcher_alt4, R.drawable.ic_launcher_foreground_alt4, "com.nekosu.ui.MainActivityAlias4"),
         Variant(R.string.app_icon_variant_fina, R.mipmap.ic_launcher_alt5, R.drawable.ic_launcher_foreground_alt5, "com.nekosu.ui.MainActivityAlias5"),
+        Variant(R.string.app_icon_variant_bakasu, R.mipmap.ic_launcher_alt6, R.mipmap.ic_launcher_alt6, "com.nekosu.ui.MainActivityAlias6"),
     )
 
     fun coerce(index: Int): Int = index.coerceIn(variants.indices)

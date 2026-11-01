@@ -4,14 +4,18 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -28,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nekosu.R
@@ -51,11 +56,7 @@ fun AppIconScreen() {
     val navigator = LocalNavigator.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
-    data class Option(val index: Int, val label: Int, val preview: Int)
-
-    val options = com.nekosu.data.settings.IconVariants.variants.mapIndexed { index, variant ->
-        Option(index, variant.labelRes, variant.previewRes)
-    }
+    val options = com.nekosu.data.settings.IconVariants.variants
 
     Scaffold(
         contentWindowInsets = adaptiveScaffoldWindowInsets(),
@@ -74,7 +75,8 @@ fun AppIconScreen() {
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) { innerPadding ->
-        LazyColumn(
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 top = innerPadding.calculateTopPadding() + 12.dp,
@@ -82,9 +84,10 @@ fun AppIconScreen() {
                 start = 16.dp,
                 end = 16.dp,
             ),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Text(
                     stringResource(R.string.app_icon_note),
                     style = MaterialTheme.typography.bodySmall,
@@ -94,28 +97,38 @@ fun AppIconScreen() {
             items(options.size) { index ->
                 val option = options[index]
                 OutlinedCard(
-                    onClick = { viewModel.dispatch(SettingsUiAction.SetIconVariant(option.index)) },
+                    onClick = { viewModel.dispatch(SettingsUiAction.SetIconVariant(index)) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Row(
-                        Modifier.padding(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Image(
-                            painter = painterResource(option.preview),
-                            contentDescription = null,
-                            modifier = Modifier.size(56.dp),
+                            painter = painterResource(option.previewRes),
+                            contentDescription = stringResource(option.labelRes),
+                            modifier = Modifier.size(48.dp),
                         )
-                        Column(Modifier.weight(1f)) {
-                            Text(stringResource(option.label), style = MaterialTheme.typography.titleSmall)
-                            if (state.iconVariant == option.index) {
-                                Text(
-                                    stringResource(R.string.app_icon_current),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                            }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(option.labelRes),
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                            maxLines = 2,
+                            color = if (state.iconVariant == index) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                        )
+                        if (state.iconVariant == index) {
+                            Text(
+                                text = stringResource(R.string.app_icon_current),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
                         }
                     }
                 }
