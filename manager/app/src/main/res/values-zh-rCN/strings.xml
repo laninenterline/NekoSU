@@ -702,4 +702,8 @@
     <string name="log_center_clear_failed">该日志不支持清空</string>
     <string name="log_center_empty">（空）</string>
     <string name="log_center_search_hint">搜索日志内容</string>
+    <string name="log_center_bugreport_save">保存完整日志包</string>
+    <string name="log_center_bugreport_share">分享完整日志包</string>
+    <string name="log_center_bugreport_saved">完整日志包已保存</string>
+    <string name="log_center_bugreport_failed">日志包导出失败</string>
 </resources>

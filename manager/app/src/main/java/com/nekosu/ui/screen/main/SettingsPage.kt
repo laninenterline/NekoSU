@@ -136,7 +136,6 @@ fun SettingsPage(bottomPadding: Dp) {
     val snackBarHost = LocalSnackbarHost.current
     val settingsViewModel = koinViewModel<SettingsViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
-    val generateBugreport = koinInject<GenerateBugreportUseCase>()
     val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
     var settingsSearch by remember { mutableStateOf("") }
@@ -166,25 +165,8 @@ fun SettingsPage(bottomPadding: Dp) {
         contentWindowInsets = adaptiveScaffoldWindowInsets(includeBottom = false),
     ) { innerPadding ->
         val loadingDialog = rememberLoadingDialog()
-        var showBottomsheet by remember { mutableStateOf(false) }
-        val logSaved = stringResource(R.string.log_saved)
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
-        val exportProblemLogLauncher = rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("text/plain"),
-        ) { uri: Uri? ->
-            if (uri == null) return@rememberLauncherForActivityResult
-            scope.launch(Dispatchers.IO) {
-                loadingDialog.show()
-                runCatching {
-                    context.contentResolver.openOutputStream(uri)?.use { output ->
-                        output.write(buildProblemLog(context).toByteArray())
-                    }
-                }
-                loadingDialog.hide()
-                snackBarHost.showReplacingSnackbar(logSaved)
-            }
-        }
         val exportSettingsLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument("application/octet-stream"),
         ) { uri: Uri? ->
@@ -223,22 +205,6 @@ fun SettingsPage(bottomPadding: Dp) {
                 }
             }
         }
-        val exportBugreportLauncher = rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("application/gzip"),
-        ) { uri: Uri? ->
-            if (uri == null) return@rememberLauncherForActivityResult
-            scope.launch(Dispatchers.IO) {
-                loadingDialog.show()
-                context.contentResolver.openOutputStream(uri)?.use { output ->
-                    generateBugreport().inputStream().use {
-                        it.copyTo(output)
-                    }
-                }
-                loadingDialog.hide()
-                snackBarHost.showReplacingSnackbar(logSaved)
-            }
-        }
-
         val resolvedSettingEntries = (settingSearchEntries() + extraSettingSearchEntries()).map { entry ->
             Triple(
                 entry,
@@ -612,29 +578,6 @@ fun SettingsPage(bottomPadding: Dp) {
                     title = stringResource(R.string.tools),
                     content = {
                         item {
-                            SettingsBaseWidget(
-                                icon = Icons.TwoTone.BugReport,
-                                title = stringResource(R.string.send_log),
-                                onClick = {
-                                    showBottomsheet = true
-                                },
-                            )
-                        }
-
-                        item {
-                            SettingsBaseWidget(
-                                icon = Icons.AutoMirrored.TwoTone.Article,
-                                title = stringResource(R.string.export_problem_log),
-                                description = stringResource(R.string.export_problem_log_summary),
-                                onClick = {
-                                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm")
-                                    val current = LocalDateTime.now().format(formatter)
-                                    exportProblemLogLauncher.launch("NekoSU_problem_$current.txt")
-                                },
-                            )
-                        }
-
-                        item {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Science,
                                 title = stringResource(R.string.kmi_diag_title),
@@ -705,50 +648,7 @@ fun SettingsPage(bottomPadding: Dp) {
                 )
             }
 
-            if (showBottomsheet) {
-                item {
-                    val sendLog = stringResource(R.string.send_log)
-                    LogBottomSheet(
-                        onDismiss = { showBottomsheet = false },
-                        onSaveLog = {
-                            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm")
-                            val current = LocalDateTime.now().format(formatter)
-                            exportBugreportLauncher.launch("KernelSU_bugreport_$current.tar.gz")
-                            showBottomsheet = false
-                        },
-                        onShareLog = {
-                            scope.launch {
-                                val bugreport = loadingDialog.withLoading {
-                                    withContext(Dispatchers.IO) {
-                                        generateBugreport()
-                                    }
-                                }
 
-                                val uri = FileProvider.getUriForFile(
-                                    context,
-                                    "${BuildConfig.APPLICATION_ID}.fileprovider",
-                                    bugreport,
-                                )
-
-                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                    putExtra(Intent.EXTRA_STREAM, uri)
-                                    setDataAndType(uri, "application/gzip")
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-
-                                context.startActivity(
-                                    Intent.createChooser(
-                                        shareIntent,
-                                        sendLog,
-                                    ),
-                                )
-
-                                showBottomsheet = false
-                            }
-                        },
-                    )
-                }
-            }
             }
 
             // 关于卡片
@@ -771,73 +671,6 @@ fun SettingsPage(bottomPadding: Dp) {
         }
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun LogBottomSheet(
-    onDismiss: () -> Unit,
-    onSaveLog: () -> Unit,
-    onShareLog: () -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SPACING_LARGE),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            LogActionButton(
-                icon = Icons.TwoTone.Save,
-                text = stringResource(R.string.save_log),
-                onClick = onSaveLog,
-            )
-
-            LogActionButton(
-                icon = Icons.TwoTone.Share,
-                text = stringResource(R.string.send_log),
-                onClick = onShareLog,
-            )
-        }
-        Spacer(modifier = Modifier.height(SPACING_LARGE))
-    }
-}
-
-@Composable
-fun LogActionButton(
-    icon: ImageVector,
-    text: String,
-    onClick: () -> Unit,
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .padding(SPACING_MEDIUM),
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = text,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(24.dp),
-            )
-        }
-        Spacer(modifier = Modifier.height(SPACING_MEDIUM))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-    }
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -868,26 +701,6 @@ private fun TopBar(
         windowInsets = TopAppBarDefaults.windowInsets.add(WindowInsets(left = 12.dp)),
         scrollBehavior = scrollBehavior,
     )
-}
-
-private fun buildProblemLog(context: android.content.Context): String {
-    val sb = StringBuilder()
-    sb.appendLine("=== NekoSU problem log ===")
-    sb.appendLine("generated: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date())}")
-    sb.appendLine("manager: ${com.nekosu.data.logging.getManagerVersion(context)}")
-    sb.appendLine("brand/model: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}")
-    sb.appendLine("android: ${android.os.Build.VERSION.RELEASE} (sdk ${android.os.Build.VERSION.SDK_INT})")
-    sb.appendLine("fingerprint: ${android.os.Build.FINGERPRINT}")
-    sb.appendLine("build type: ${android.os.Build.TYPE} tags=${android.os.Build.TAGS}")
-    sb.appendLine()
-    sb.appendLine("=== jailbreak (Magica) failure log ===")
-    val failure = com.nekosu.magica.MagicaFailureLog.read(context)
-    sb.appendLine(failure.ifBlank { "(no recorded jailbreak failure)" })
-    sb.appendLine()
-    sb.appendLine("=== crash log ===")
-    val crash = com.nekosu.data.logging.CrashLogger.read(context)
-    sb.appendLine(crash.ifBlank { "(no recorded crash)" })
-    return sb.toString()
 }
 
 private fun preferencesBackupFile(context: android.content.Context): java.io.File =

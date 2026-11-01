@@ -15,8 +15,6 @@ fun settingSearchEntries(): List<SettingSearchEntry> = listOf(
     SettingSearchEntry(R.string.settings_check_module_update, R.string.settings_check_module_update_summary, null, "settings check module update settings check module update summary"),
     SettingSearchEntry(R.string.log_center_title, R.string.log_center_summary, Route.LogCenter, "log center 日志 sulog magica crash metamodule problem log"),
     SettingSearchEntry(R.string.theme_settings, R.string.theme_settings, Route.ThemeSettings, "theme settings theme settings"),
-    SettingSearchEntry(R.string.send_log, null, null, "send log"),
-    SettingSearchEntry(R.string.export_problem_log, R.string.export_problem_log_summary, null, "export problem log export problem log summary"),
     SettingSearchEntry(R.string.block_modules_title, R.string.block_modules_summary, Route.BlockModules, "block modules title block modules summary"),
     SettingSearchEntry(R.string.kmi_diag_title, R.string.kmi_diag_summary, Route.KmiDiagnostics, "kmi diag title kmi diag summary"),
     SettingSearchEntry(R.string.settings_backup_title, R.string.settings_backup_summary, null, "settings backup title settings backup summary"),

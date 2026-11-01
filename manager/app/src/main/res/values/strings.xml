@@ -706,4 +706,8 @@
     <string name="log_center_clear_failed">This log cannot be cleared</string>
     <string name="log_center_empty">(empty)</string>
     <string name="log_center_search_hint">Search log content</string>
+    <string name="log_center_bugreport_save">Save full log bundle</string>
+    <string name="log_center_bugreport_share">Share full log bundle</string>
+    <string name="log_center_bugreport_saved">Log bundle saved</string>
+    <string name="log_center_bugreport_failed">Log bundle failed</string>
 </resources>

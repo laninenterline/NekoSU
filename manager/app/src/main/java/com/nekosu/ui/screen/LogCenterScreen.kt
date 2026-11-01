@@ -42,6 +42,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.content.Intent
+import androidx.compose.material.icons.twotone.BugReport
+import androidx.compose.material.icons.twotone.Share
+import androidx.core.content.FileProvider
+import com.nekosu.BuildConfig
+import com.nekosu.domain.usecase.GenerateBugreportUseCase
+import org.koin.compose.koinInject
 import com.nekosu.R
 import com.nekosu.data.logging.LogSource
 import com.nekosu.ui.component.SearchAppBar
@@ -71,6 +78,29 @@ fun LogCenterScreen() {
     val scrollBehavior = rememberSearchAppBarScrollBehavior(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState()),
     )
+
+    val generateBugreport = koinInject<GenerateBugreportUseCase>()
+    val bugreportSavedMsg = stringResource(R.string.log_center_bugreport_saved)
+    val bugreportFailedMsg = stringResource(R.string.log_center_bugreport_failed)
+    val shareBugreportTitle = stringResource(R.string.log_center_bugreport_share)
+
+    val bugreportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/gzip"),
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch(Dispatchers.IO) {
+            val ok = runCatching {
+                generateBugreport().inputStream().use { input ->
+                    context.contentResolver.openOutputStream(uri)?.use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            }.isSuccess
+            withContext(Dispatchers.Main) {
+                snackbarHost.showReplacingSnackbar(if (ok) bugreportSavedMsg else bugreportFailedMsg)
+            }
+        }
+    }
 
     val clearedMsg = stringResource(R.string.log_center_cleared)
     val clearFailedMsg = stringResource(R.string.log_center_clear_failed)
@@ -164,6 +194,41 @@ fun LogCenterScreen() {
                         }
                     }) {
                         Icon(Icons.TwoTone.Delete, contentDescription = stringResource(R.string.log_center_clear))
+                    }
+                    IconButton(onClick = {
+                        val formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm")
+                        val current = java.time.LocalDateTime.now().format(formatter)
+                        bugreportLauncher.launch("KernelSU_bugreport_$current.tar.gz")
+                    }) {
+                        Icon(Icons.TwoTone.BugReport, contentDescription = stringResource(R.string.log_center_bugreport_save))
+                    }
+                    IconButton(onClick = {
+                        scope.launch(Dispatchers.IO) {
+                            val ok = runCatching {
+                                val bugreport = generateBugreport()
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${BuildConfig.APPLICATION_ID}.fileprovider",
+                                    bugreport,
+                                )
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    setDataAndType(uri, "application/gzip")
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                withContext(Dispatchers.Main) {
+                                    context.startActivity(Intent.createChooser(shareIntent, shareBugreportTitle))
+                                }
+                                true
+                            }.isSuccess
+                            if (!ok) {
+                                withContext(Dispatchers.Main) {
+                                    snackbarHost.showReplacingSnackbar(bugreportFailedMsg)
+                                }
+                            }
+                        }
+                    }) {
+                        Icon(Icons.TwoTone.Share, contentDescription = shareBugreportTitle)
                     }
                     IconButton(onClick = { exportLauncher.launch("NekoSU_logs.txt") }) {
                         Icon(Icons.TwoTone.Save, contentDescription = stringResource(R.string.log_center_export))
