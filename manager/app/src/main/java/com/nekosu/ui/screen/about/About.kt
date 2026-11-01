@@ -156,7 +156,7 @@ fun AboutScreen() {
                     message = AnnotatedString.fromHtml(
                         htmlString = stringResource(
                             id = R.string.about_app_icon,
-                            "<b><a href=\"https://github.com/laninenterline\">laninenterline</a></b>",
+                            "<b><a href=\"https://github.com/laninenterline\">AzeriNeko</a></b>",
                         ),
                         linkStyles = TextLinkStyles(
                             style = SpanStyle(
