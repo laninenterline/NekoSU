@@ -724,4 +724,5 @@
     <string name="guide_note">After a successful load the manager will be restarted automatically. Ensure the APK that provided ksud is the same version you use as manager.</string>
     <string name="guide_copy">Copy command</string>
     <string name="guide_copied">Command copied</string>
+    <string name="about_app_icon"><![CDATA[TOUS DROITS RÉSERVÉS pour les icônes dont la propriété intellectuelle appartient à %1$s]]></string>
 </resources>
