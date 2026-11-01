@@ -259,6 +259,8 @@ private fun StatusCard() {
                             .size(56.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .clickable {
+                                // Release builds must not expose the developer unlock gesture.
+                                if (!BuildConfig.DEBUG) return@clickable
                                 val now = SystemClock.elapsedRealtime()
                                 if (now - iconLastTapAt > 2000) iconTapCount = 0
                                 iconLastTapAt = now
