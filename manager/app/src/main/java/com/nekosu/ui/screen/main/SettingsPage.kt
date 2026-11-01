@@ -109,7 +109,6 @@ import com.nekosu.ui.theme.CardConfig
 import com.nekosu.ui.theme.ThemeConfig
 import com.nekosu.ui.theme.blurEffect
 import com.nekosu.ui.theme.blurSource
-import com.nekosu.ui.util.DebugFeatureGate
 import com.nekosu.ui.util.LocalSnackbarHost
 import com.nekosu.ui.util.adaptiveScaffoldWindowInsets
 import com.nekosu.ui.util.showReplacingSnackbar
@@ -170,8 +169,6 @@ fun SettingsPage(bottomPadding: Dp) {
         var showBottomsheet by remember { mutableStateOf(false) }
         val logSaved = stringResource(R.string.log_saved)
         val context = LocalContext.current
-        val rootFeaturesVisible = DebugFeatureGate.rootFeaturesVisible(context)
-        val debugUnlocked = com.nekosu.BuildConfig.DEBUG && DebugFeatureGate.unlocked
         val scope = rememberCoroutineScope()
         val exportProblemLogLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument("text/plain"),
@@ -249,21 +246,11 @@ fun SettingsPage(bottomPadding: Dp) {
                 entry.descriptionRes?.let { stringResource(it) } ?: "",
             )
         }
-        val hiddenRoutes = setOf<Route>(
-            Route.BlockModules,
-            Route.KmiDiagnostics,
-            Route.MagicaLog,
-            Route.CustomLkm,
-            Route.MultiManager,
-            Route.DynamicManager,
-            Route.UmountManager,
-        )
         val filteredSettingEntries = if (settingsSearch.isBlank()) {
             emptyList()
         } else {
             resolvedSettingEntries.filter { (entry, title, description) ->
-                (rootFeaturesVisible || entry.route !in hiddenRoutes) &&
-                    (title.contains(settingsSearch, ignoreCase = true) ||
+                (title.contains(settingsSearch, ignoreCase = true) ||
                         description.contains(settingsSearch, ignoreCase = true) ||
                         entry.keywords.contains(settingsSearch, ignoreCase = true))
             }
@@ -322,7 +309,7 @@ fun SettingsPage(bottomPadding: Dp) {
             }
             if (settingsSearch.isBlank()) {
             // 配置卡片
-            if (homeState.systemStatus.isFullFeatured || debugUnlocked) {
+            if (homeState.systemStatus.isFullFeatured) {
                 item {
                     val modeItems = listOf(
                         stringResource(id = R.string.settings_mode_default),
@@ -635,7 +622,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        item(visible = rootFeaturesVisible) {
+                        item {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.RemoveModerator,
                                 title = stringResource(R.string.block_modules_title),
@@ -646,7 +633,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        item(visible = rootFeaturesVisible) {
+                        item {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Science,
                                 title = stringResource(R.string.kmi_diag_title),
@@ -657,7 +644,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        item(visible = rootFeaturesVisible) {
+                        item {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Info,
                                 title = stringResource(R.string.magica_log_title),
@@ -668,7 +655,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        item(visible = rootFeaturesVisible) {
+                        item {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Groups,
                                 title = stringResource(R.string.multi_manager_title),
@@ -679,7 +666,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        item(visible = rootFeaturesVisible) {
+                        item {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Fence,
                                 title = stringResource(R.string.custom_lkm_title),
@@ -712,7 +699,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        if ((homeState.systemStatus.isFullFeatured || debugUnlocked) && rootFeaturesVisible) {
+                        if (homeState.systemStatus.isFullFeatured) {
                             item {
                                 SettingsJumpPageWidget(
                                     icon = Icons.TwoTone.Security,

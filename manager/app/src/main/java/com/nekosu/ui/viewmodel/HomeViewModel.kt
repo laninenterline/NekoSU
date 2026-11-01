@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
+import com.nekosu.BuildConfig
+import com.nekosu.ui.util.DebugFeatureGate
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
@@ -105,6 +108,11 @@ class HomeViewModel(
     init {
         applyUserSettings()
         viewModelScope.launch { countRepository.refresh() }
+        viewModelScope.launch {
+            DebugFeatureGate.unlockedFlow.drop(1).collect {
+                refreshData(refreshUI = true)
+            }
+        }
     }
 
     suspend fun awaitInitialData() {
@@ -124,6 +132,13 @@ class HomeViewModel(
                     applyUserSettings()
                     val kernelStatus = runCatching { getKernelStatus() }
                         .getOrElse { uiState.value.systemStatus }
+                        .let { status ->
+                            if (DebugFeatureGate.forceRoot) {
+                                status.copy(isRootAvailable = true, isFullFeatured = true)
+                            } else {
+                                status
+                            }
+                        }
                     homeStateRepository.update {
                         it.copy(systemStatus = kernelStatus, isCoreDataLoaded = true)
                     }
@@ -151,7 +166,7 @@ class HomeViewModel(
                                     basicInfo.selinuxStatus
                                 },
                                 susfsEnabled = susfsInfo.enabled,
-                                susfsVersionSupported = susfsInfo.enabled,
+                                susfsVersionSupported = susfsInfo.enabled || DebugFeatureGate.forceRoot,
                                 susfsVersion = susfsInfo.version,
                                 susfsFeatures = susfsInfo.enabledFeatures,
                                 managersList = managerInfo,

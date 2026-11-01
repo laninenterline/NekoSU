@@ -113,7 +113,6 @@ import com.nekosu.ui.theme.CardConfig
 import com.nekosu.ui.theme.ThemeConfig
 import com.nekosu.ui.theme.blurEffect
 import com.nekosu.ui.theme.blurSource
-import com.nekosu.ui.util.DebugFeatureGate
 import com.nekosu.ui.util.LocalPermissionRequestInterface
 import com.nekosu.ui.util.LocalSnackbarHost
 import com.nekosu.ui.util.adaptiveScaffoldWindowInsets
@@ -560,9 +559,7 @@ private fun TopBar(
         actions = {
             if (uiState.isCoreDataLoaded) {
                 // SuSFS 配置按钮
-                if ((uiState.systemInfo.susfsVersionSupported ||
-                        (com.nekosu.BuildConfig.DEBUG && DebugFeatureGate.unlocked)) &&
-                    DebugFeatureGate.rootFeaturesVisible(androidx.compose.ui.platform.LocalContext.current)) {
+                if (uiState.systemInfo.susfsVersionSupported) {
                     IconButton(onClick = {
                         navigator.push(Route.SuSFSConfig)
                     }) {
@@ -775,7 +772,6 @@ private fun InfoCard(
     isSimpleMode: Boolean,
     showHomeCardIcons: Boolean,
 ) {
-    val rootFeaturesVisible = DebugFeatureGate.rootFeaturesVisible(androidx.compose.ui.platform.LocalContext.current)
 
     val managersList = systemInfo.managersList
 
@@ -835,7 +831,7 @@ private fun InfoCard(
 
         item(
             visible = !isSimpleMode && systemInfo.susfsEnabled && systemInfo.susfsVersion.isNotEmpty() &&
-                rootFeaturesVisible,
+                !isSimpleMode && systemInfo.susfsEnabled && systemInfo.susfsVersion.isNotEmpty(),
         ) {
             SettingsBaseWidget(
                 icon = Icons.TwoTone.Settings.takeIf { showHomeCardIcons },

@@ -14,6 +14,7 @@ class KernelSUApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         com.nekosu.data.logging.CrashLogger.install(this)
+        com.nekosu.ui.util.DebugFeatureGate.initialize(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val processName = getProcessName()
             if (processName.endsWith("MagicaService")) {
