@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.Article
@@ -92,6 +93,8 @@ import com.nekosu.BuildConfig
 import com.nekosu.R
 import com.nekosu.domain.usecase.GenerateBugreportUseCase
 import com.nekosu.ui.component.ConfirmResult
+import com.nekosu.ui.component.SearchAppBar
+import com.nekosu.ui.component.rememberSearchAppBarScrollBehavior
 import com.nekosu.ui.component.SwipeableSnackbarHost
 import com.nekosu.ui.component.rememberConfirmDialog
 import com.nekosu.ui.component.rememberLoadingDialog
@@ -127,13 +130,16 @@ private val SPACING_LARGE = 16.dp
 @Composable
 fun SettingsPage(bottomPadding: Dp) {
     val navigator = LocalNavigator.current
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = rememberSearchAppBarScrollBehavior(
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState()),
+    )
     val snackBarHost = LocalSnackbarHost.current
     val settingsViewModel = koinViewModel<SettingsViewModel>()
     val homeViewModel = koinViewModel<HomeViewModel>()
     val generateBugreport = koinInject<GenerateBugreportUseCase>()
     val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    var settingsSearch by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         settingsViewModel.dispatch(SettingsUiAction.LoadFeatureSettings)
@@ -141,7 +147,13 @@ fun SettingsPage(bottomPadding: Dp) {
 
     Scaffold(
         topBar = {
-            TopBar(scrollBehavior = scrollBehavior)
+            SearchAppBar(
+                title = stringResource(R.string.settings),
+                searchText = settingsSearch,
+                onSearchTextChange = { settingsSearch = it },
+                scrollBehavior = scrollBehavior,
+                searchBarPlaceHolderText = stringResource(R.string.settings_search_hint),
+            )
         },
         snackbarHost = {
             SwipeableSnackbarHost(
@@ -227,6 +239,16 @@ fun SettingsPage(bottomPadding: Dp) {
             }
         }
 
+        val allSettingEntries = settingsEntries()
+        val filteredSettingEntries = if (settingsSearch.isBlank()) {
+            emptyList()
+        } else {
+            allSettingEntries.filter {
+                it.title.contains(settingsSearch, ignoreCase = true) ||
+                    it.description.contains(settingsSearch, ignoreCase = true)
+            }
+        }
+
         LazyColumn(
             modifier =
                 Modifier
@@ -239,23 +261,32 @@ fun SettingsPage(bottomPadding: Dp) {
                 bottom = innerPadding.calculateBottomPadding() + bottomPadding + 15.dp,
             ),
         ) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .fillMaxWidth(),
-                ) {
-                    SettingsJumpPageWidget(
-                        icon = Icons.TwoTone.Search,
-                        title = stringResource(R.string.settings_search_title),
-                        description = stringResource(R.string.settings_search_summary),
-                        onClick = {
-                            navigator.push(Route.SettingsSearch)
-                        },
-                    )
+            if (settingsSearch.isNotBlank()) {
+                if (filteredSettingEntries.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 24.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(stringResource(R.string.settings_search_empty))
+                        }
+                    }
+                } else {
+                    items(filteredSettingEntries, key = { it.title }) { entry ->
+                        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Search,
+                                title = entry.title,
+                                description = entry.description,
+                                onClick = { navigator.push(entry.route) },
+                            )
+                        }
+                    }
                 }
             }
-
+            if (settingsSearch.isBlank()) {
             // 配置卡片
             if (homeState.systemStatus.isFullFeatured) {
                 item {
@@ -740,6 +771,7 @@ fun SettingsPage(bottomPadding: Dp) {
                     )
                 }
             }
+            }
 
             // 关于卡片
             item {
@@ -827,6 +859,24 @@ fun LogActionButton(
         )
     }
 }
+
+
+private data class SettingEntry(val title: String, val description: String, val route: Route)
+
+@Composable
+private fun settingsEntries(): List<SettingEntry> = listOf(
+    SettingEntry(stringResource(R.string.app_icon_title), stringResource(R.string.app_icon_summary), Route.AppIcon),
+    SettingEntry(stringResource(R.string.block_modules_title), stringResource(R.string.block_modules_summary), Route.BlockModules),
+    SettingEntry(stringResource(R.string.kmi_diag_title), stringResource(R.string.kmi_diag_summary), Route.KmiDiagnostics),
+    SettingEntry(stringResource(R.string.magica_log_title), stringResource(R.string.magica_log_summary), Route.MagicaLog),
+    SettingEntry(stringResource(R.string.guide_title), stringResource(R.string.guide_summary), Route.ManualLoadGuide),
+    SettingEntry(stringResource(R.string.custom_lkm_title), stringResource(R.string.custom_lkm_summary), Route.CustomLkm),
+    SettingEntry(stringResource(R.string.susfs_presets_title), stringResource(R.string.susfs_presets_summary), Route.SusfsPresets),
+    SettingEntry(stringResource(R.string.multi_manager_title), stringResource(R.string.multi_manager_summary), Route.MultiManager),
+    SettingEntry(stringResource(R.string.theme_settings), stringResource(R.string.theme_settings), Route.ThemeSettings),
+    SettingEntry(stringResource(R.string.dynamic_manager_title), stringResource(R.string.dynamic_manager_settings_summary), Route.DynamicManager),
+    SettingEntry(stringResource(R.string.umount_path_manager), stringResource(R.string.umount_path_manager_summary), Route.UmountManager),
+)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
