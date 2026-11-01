@@ -23,37 +23,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Rect
-import android.graphics.drawable.Icon
-import android.content.pm.ShortcutInfo
-import android.content.pm.ShortcutManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.Button
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import com.nekosu.ui.component.SwipeableSnackbarHost
-import com.nekosu.ui.util.LocalSnackbarHost
-import com.nekosu.ui.util.showReplacingSnackbar
-import java.io.InputStream
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import com.nekosu.R
 import com.nekosu.ui.component.settings.AppBackButton
 import com.nekosu.ui.navigation.LocalNavigator
@@ -82,24 +58,6 @@ fun AppIconScreen() {
         Option(true, R.string.app_icon_alt, R.drawable.ic_launcher_foreground_alt),
     )
 
-    val context = LocalContext.current
-    val snackBarHost = LocalSnackbarHost.current
-    val scope = rememberCoroutineScope()
-    val requested = stringResource(R.string.app_icon_custom_requested)
-    val failed = stringResource(R.string.app_icon_custom_failed)
-    val customPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch(Dispatchers.IO) {
-            val ok = runCatching {
-                val bitmap = decodeSquareIcon(context.contentResolver.openInputStream(uri))
-                requestCustomIconShortcut(context, bitmap)
-            }.isSuccess
-            withContext(Dispatchers.Main) {
-                snackBarHost.showReplacingSnackbar(if (ok) requested else failed)
-            }
-        }
-    }
-
     Scaffold(
         contentWindowInsets = adaptiveScaffoldWindowInsets(),
         topBar = {
@@ -115,7 +73,6 @@ fun AppIconScreen() {
             )
         },
         containerColor = Color.Transparent,
-        snackbarHost = { SwipeableSnackbarHost(hostState = snackBarHost) },
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) { innerPadding ->
         LazyColumn(
@@ -129,33 +86,23 @@ fun AppIconScreen() {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text(stringResource(R.string.app_icon_custom), style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            stringResource(R.string.app_icon_custom_summary),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Button(
-                            onClick = { customPicker.launch("image/*") },
-                            modifier = Modifier.padding(top = 8.dp),
-                        ) {
-                            Text(stringResource(R.string.app_icon_custom_pick))
-                        }
-                    }
-                }
+                Text(
+                    stringResource(R.string.app_icon_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-            item {
-                Text(stringResource(R.string.app_icon_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            items(2) { index ->
+            items(options.size) { index ->
                 val option = options[index]
                 OutlinedCard(
                     onClick = { viewModel.dispatch(SettingsUiAction.SetAlternateIcon(option.alt)) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Row(
+                        Modifier.padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Image(
                             painter = painterResource(option.preview),
                             contentDescription = null,
@@ -164,7 +111,11 @@ fun AppIconScreen() {
                         Column(Modifier.weight(1f)) {
                             Text(stringResource(option.label), style = MaterialTheme.typography.titleSmall)
                             if (state.useAltIcon == option.alt) {
-                                Text(stringResource(R.string.app_icon_current), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    stringResource(R.string.app_icon_current),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
                             }
                         }
                     }
@@ -172,33 +123,4 @@ fun AppIconScreen() {
             }
         }
     }
-}
-
-private fun decodeSquareIcon(input: InputStream?): Bitmap {
-    requireNotNull(input) { "no input" }
-    val bitmap = input.use { BitmapFactory.decodeStream(it) }
-    requireNotNull(bitmap) { "decode failed" }
-    val side = minOf(bitmap.width, bitmap.height)
-    val src = Rect((bitmap.width - side) / 2, (bitmap.height - side) / 2,
-        (bitmap.width + side) / 2, (bitmap.height + side) / 2)
-    val out = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(out)
-    canvas.drawBitmap(bitmap, src, Rect(0, 0, 512, 512), Paint(Paint.FILTER_BITMAP_FLAG))
-    return out
-}
-
-private fun requestCustomIconShortcut(context: android.content.Context, bitmap: Bitmap) {
-    val manager = context.getSystemService(ShortcutManager::class.java) ?: return
-    val shortcut = ShortcutInfo.Builder(context, "nekosu_custom_icon")
-        .setShortLabel(context.getString(R.string.app_icon_custom_shortcut_label))
-        .setIcon(Icon.createWithAdaptiveBitmap(bitmap))
-        .setIntent(
-            Intent(context, Class.forName("com.nekosu.ui.MainActivity")).apply {
-                action = Intent.ACTION_MAIN
-                addCategory(Intent.CATEGORY_LAUNCHER)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            },
-        )
-        .build()
-    manager.requestPinShortcut(shortcut, null)
 }
