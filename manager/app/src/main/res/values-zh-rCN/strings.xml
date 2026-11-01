@@ -684,4 +684,22 @@
     <string name="about_app_icon"><![CDATA[App 图标版权归 %1$s 所有，保留所有权利]]></string>
     <string name="manager_config_title">管理器配置</string>
     <string name="manager_config_summary">查看内核接受的管理器，并管理动态管理器签名</string>
+    <string name="log_center_title">日志中心</string>
+    <string name="log_center_summary">集中查看 SU 日志、越狱日志、崩溃、元模块与问题日志</string>
+    <string name="log_center_all">全部</string>
+    <string name="log_center_sulog">SU 日志</string>
+    <string name="log_center_magica">越狱日志</string>
+    <string name="log_center_crash">崩溃日志</string>
+    <string name="log_center_metamodule">元模块日志</string>
+    <string name="log_center_problem">问题日志</string>
+    <string name="log_center_refresh">刷新</string>
+    <string name="log_center_loading">加载中…</string>
+    <string name="log_center_export">导出</string>
+    <string name="log_center_export_success">日志已导出</string>
+    <string name="log_center_export_failed">导出失败</string>
+    <string name="log_center_clear">清空</string>
+    <string name="log_center_cleared">日志已清空</string>
+    <string name="log_center_clear_failed">该日志不支持清空</string>
+    <string name="log_center_empty">（空）</string>
+    <string name="log_center_search_hint">搜索日志内容</string>
 </resources>

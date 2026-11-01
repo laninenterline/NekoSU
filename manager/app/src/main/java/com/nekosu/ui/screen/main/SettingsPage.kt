@@ -647,11 +647,11 @@ fun SettingsPage(bottomPadding: Dp) {
 
                         item {
                             SettingsJumpPageWidget(
-                                icon = Icons.TwoTone.Info,
-                                title = stringResource(R.string.magica_log_title),
-                                description = stringResource(R.string.magica_log_summary),
+                                icon = Icons.AutoMirrored.TwoTone.Article,
+                                title = stringResource(R.string.log_center_title),
+                                description = stringResource(R.string.log_center_summary),
                                 onClick = {
-                                    navigator.push(Route.MagicaLog)
+                                    navigator.push(Route.LogCenter)
                                 },
                             )
                         }

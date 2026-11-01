@@ -688,4 +688,22 @@
     <string name="about_app_icon"><![CDATA[The icons are ALL RIGHTS RESERVED and copyright is held by %1$s]]></string>
     <string name="manager_config_title">Managers</string>
     <string name="manager_config_summary">View accepted managers and manage the dynamic manager signature</string>
+    <string name="log_center_title">Log center</string>
+    <string name="log_center_summary">All logs in one place: SU log, Magica, crash, meta-module, problem log</string>
+    <string name="log_center_all">All</string>
+    <string name="log_center_sulog">SU log</string>
+    <string name="log_center_magica">Magica</string>
+    <string name="log_center_crash">Crash</string>
+    <string name="log_center_metamodule">Meta-module</string>
+    <string name="log_center_problem">Problem log</string>
+    <string name="log_center_refresh">Refresh</string>
+    <string name="log_center_loading">Loading...</string>
+    <string name="log_center_export">Export</string>
+    <string name="log_center_export_success">Log exported</string>
+    <string name="log_center_export_failed">Export failed</string>
+    <string name="log_center_clear">Clear</string>
+    <string name="log_center_cleared">Log cleared</string>
+    <string name="log_center_clear_failed">This log cannot be cleared</string>
+    <string name="log_center_empty">(empty)</string>
+    <string name="log_center_search_hint">Search log content</string>
 </resources>

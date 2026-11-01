@@ -147,6 +147,10 @@ sealed interface Route :
 
     @Parcelize
     @Serializable
+    data object LogCenter : Route
+
+    @Parcelize
+    @Serializable
     data object SettingsSearch : Route
 
     @Parcelize

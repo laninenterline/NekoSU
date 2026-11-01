@@ -22,6 +22,7 @@ import com.nekosu.data.flash.FlashRepository
 import com.nekosu.data.kernel.KernelRepository
 import com.nekosu.data.kernel.UmountRepository
 import com.nekosu.data.logging.BugreportRepository
+import com.nekosu.data.logging.LogCenterRepository
 import com.nekosu.data.logging.SulogRepository
 import com.nekosu.data.module.ModuleActionRepository
 import com.nekosu.data.module.ModuleCatalogRepository
@@ -186,6 +187,7 @@ import com.nekosu.ui.viewmodel.RepositorySourcesViewModel
 import com.nekosu.ui.viewmodel.ScriptRunViewModel
 import com.nekosu.ui.viewmodel.SettingsViewModel
 import com.nekosu.ui.viewmodel.SuSFSViewModel
+import com.nekosu.ui.viewmodel.LogCenterViewModel
 import com.nekosu.ui.viewmodel.SulogViewModel
 import com.nekosu.ui.viewmodel.SuperUserViewModel
 import com.nekosu.ui.viewmodel.TemplateEditorViewModel
@@ -276,6 +278,7 @@ val repositoryModule = module {
     singleOf(::NetworkRequestRepository)
     singleOf(::DynamicManagerRepository)
     singleOf(::SulogRepository)
+    singleOf(::LogCenterRepository)
     singleOf(::BugreportRepository)
     singleOf(::UmountRepository)
     singleOf(::ModuleCatalogRepository)
@@ -461,6 +464,7 @@ val viewModelModule = module {
         )
     }
     viewModelOf(::SulogViewModel)
+    viewModelOf(::LogCenterViewModel)
     viewModelOf(::DynamicManagerViewModel)
     viewModelOf(::FlashViewModel)
     viewModelOf(::UmountManagerScreenViewModel)

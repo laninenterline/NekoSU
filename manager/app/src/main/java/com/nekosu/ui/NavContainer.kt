@@ -86,6 +86,7 @@ import com.nekosu.ui.screen.FlashIt
 import com.nekosu.ui.screen.KmiDiagnosticsScreen
 import com.nekosu.ui.screen.AppIconScreen
 import com.nekosu.ui.screen.SettingsSearchScreen
+import com.nekosu.ui.screen.LogCenterScreen
 import com.nekosu.ui.screen.MagicaLogScreen
 import com.nekosu.ui.screen.FlashScreen
 import com.nekosu.ui.screen.ScriptRunScreen
@@ -625,6 +626,18 @@ fun NavContainer(
                     KmiDiagnosticsScreen()
                 }
             }
+            entry<Route.LogCenter>(swipeDismiss = swipeBackDirection) {
+                ManagerNavEntry(
+                    interceptPredictiveBack = interceptPredictiveBack,
+                    onBack = onBack,
+                    themeConfig = themeConfig,
+                    backgroundRenderState = backgroundRenderState,
+                    useBlur = useBlur,
+                ) {
+                    LogCenterScreen()
+                }
+            }
+
             entry<Route.MagicaLog>(swipeDismiss = swipeBackDirection) {
                 ManagerNavEntry(
                     interceptPredictiveBack = interceptPredictiveBack,
