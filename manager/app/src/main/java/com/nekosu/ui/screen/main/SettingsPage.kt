@@ -239,13 +239,20 @@ fun SettingsPage(bottomPadding: Dp) {
             }
         }
 
-        val allSettingEntries = settingsEntries()
+        val resolvedSettingEntries = (settingSearchEntries() + extraSettingSearchEntries()).map { entry ->
+            Triple(
+                entry,
+                stringResource(entry.titleRes),
+                entry.descriptionRes?.let { stringResource(it) } ?: "",
+            )
+        }
         val filteredSettingEntries = if (settingsSearch.isBlank()) {
             emptyList()
         } else {
-            allSettingEntries.filter {
-                it.title.contains(settingsSearch, ignoreCase = true) ||
-                    it.description.contains(settingsSearch, ignoreCase = true)
+            resolvedSettingEntries.filter { (entry, title, description) ->
+                title.contains(settingsSearch, ignoreCase = true) ||
+                    description.contains(settingsSearch, ignoreCase = true) ||
+                    entry.keywords.contains(settingsSearch, ignoreCase = true)
             }
         }
 
@@ -274,13 +281,27 @@ fun SettingsPage(bottomPadding: Dp) {
                         }
                     }
                 } else {
-                    items(filteredSettingEntries, key = { it.title }) { entry ->
+                    items(filteredSettingEntries, key = { it.second }) { (entry, title, description) ->
                         Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Search,
-                                title = entry.title,
-                                description = entry.description,
-                                onClick = { navigator.push(entry.route) },
+                                title = title,
+                                description = description.ifBlank {
+                                    stringResource(R.string.settings_search_in_page)
+                                },
+                                onClick = {
+                                    val route = entry.route
+                                    if (route != null) {
+                                        navigator.push(route)
+                                    } else {
+                                        settingsSearch = ""
+                                        scope.launch {
+                                            snackBarHost.showReplacingSnackbar(
+                                                context.getString(R.string.settings_search_cleared),
+                                            )
+                                        }
+                                    }
+                                },
                             )
                         }
                     }
@@ -860,23 +881,6 @@ fun LogActionButton(
     }
 }
 
-
-private data class SettingEntry(val title: String, val description: String, val route: Route)
-
-@Composable
-private fun settingsEntries(): List<SettingEntry> = listOf(
-    SettingEntry(stringResource(R.string.app_icon_title), stringResource(R.string.app_icon_summary), Route.AppIcon),
-    SettingEntry(stringResource(R.string.block_modules_title), stringResource(R.string.block_modules_summary), Route.BlockModules),
-    SettingEntry(stringResource(R.string.kmi_diag_title), stringResource(R.string.kmi_diag_summary), Route.KmiDiagnostics),
-    SettingEntry(stringResource(R.string.magica_log_title), stringResource(R.string.magica_log_summary), Route.MagicaLog),
-    SettingEntry(stringResource(R.string.guide_title), stringResource(R.string.guide_summary), Route.ManualLoadGuide),
-    SettingEntry(stringResource(R.string.custom_lkm_title), stringResource(R.string.custom_lkm_summary), Route.CustomLkm),
-    SettingEntry(stringResource(R.string.susfs_presets_title), stringResource(R.string.susfs_presets_summary), Route.SusfsPresets),
-    SettingEntry(stringResource(R.string.multi_manager_title), stringResource(R.string.multi_manager_summary), Route.MultiManager),
-    SettingEntry(stringResource(R.string.theme_settings), stringResource(R.string.theme_settings), Route.ThemeSettings),
-    SettingEntry(stringResource(R.string.dynamic_manager_title), stringResource(R.string.dynamic_manager_settings_summary), Route.DynamicManager),
-    SettingEntry(stringResource(R.string.umount_path_manager), stringResource(R.string.umount_path_manager_summary), Route.UmountManager),
-)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
