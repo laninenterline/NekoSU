@@ -50,6 +50,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import android.os.SystemClock
+import android.widget.Toast
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.nekosu.ui.util.DebugFeatureGate
+import androidx.compose.runtime.getValue
 import com.nekosu.BuildConfig
 import com.nekosu.R
 import com.nekosu.ui.component.WarningCard
@@ -184,6 +193,10 @@ private fun AboutScreenPreview() {
 
 @Composable
 private fun StatusCard() {
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var iconTapCount by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var iconLastTapAt by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
     val themeConfig: ThemeConfig = koinInject()
     val cardConfig: CardConfig = koinInject()
     Surface(
@@ -209,7 +222,22 @@ private fun StatusCard() {
                     Image(
                         modifier = Modifier
                             .size(56.dp)
-                            .clip(RoundedCornerShape(16.dp)),
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable {
+                                val now = SystemClock.elapsedRealtime()
+                                if (now - iconLastTapAt > 2000) iconTapCount = 0
+                                iconLastTapAt = now
+                                iconTapCount += 1
+                                if (iconTapCount >= 7) {
+                                    iconTapCount = 0
+                                    DebugFeatureGate.unlock(context)
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.debug_features_unlocked),
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                                }
+                            },
                         painter = rememberDrawablePainter(
                             drawable = ContextCompat.getDrawable(
                                 LocalContext.current,

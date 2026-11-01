@@ -109,6 +109,7 @@ import com.nekosu.ui.theme.CardConfig
 import com.nekosu.ui.theme.ThemeConfig
 import com.nekosu.ui.theme.blurEffect
 import com.nekosu.ui.theme.blurSource
+import com.nekosu.ui.util.DebugFeatureGate
 import com.nekosu.ui.util.LocalSnackbarHost
 import com.nekosu.ui.util.adaptiveScaffoldWindowInsets
 import com.nekosu.ui.util.showReplacingSnackbar
@@ -169,6 +170,7 @@ fun SettingsPage(bottomPadding: Dp) {
         var showBottomsheet by remember { mutableStateOf(false) }
         val logSaved = stringResource(R.string.log_saved)
         val context = LocalContext.current
+        val rootFeaturesVisible = DebugFeatureGate.rootFeaturesVisible(context)
         val scope = rememberCoroutineScope()
         val exportProblemLogLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument("text/plain"),
@@ -622,7 +624,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        item {
+                        item(visible = rootFeaturesVisible) {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.RemoveModerator,
                                 title = stringResource(R.string.block_modules_title),
@@ -633,7 +635,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        item {
+                        item(visible = rootFeaturesVisible) {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Science,
                                 title = stringResource(R.string.kmi_diag_title),
@@ -644,7 +646,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        item {
+                        item(visible = rootFeaturesVisible) {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Info,
                                 title = stringResource(R.string.magica_log_title),
@@ -655,7 +657,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        item {
+                        item(visible = rootFeaturesVisible) {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Groups,
                                 title = stringResource(R.string.multi_manager_title),
@@ -666,7 +668,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        item {
+                        item(visible = rootFeaturesVisible) {
                             SettingsJumpPageWidget(
                                 icon = Icons.TwoTone.Fence,
                                 title = stringResource(R.string.custom_lkm_title),
@@ -699,7 +701,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        if (homeState.systemStatus.isFullFeatured) {
+                        if (homeState.systemStatus.isFullFeatured && rootFeaturesVisible) {
                             item {
                                 SettingsJumpPageWidget(
                                     icon = Icons.TwoTone.Security,
