@@ -560,7 +560,9 @@ private fun TopBar(
         actions = {
             if (uiState.isCoreDataLoaded) {
                 // SuSFS 配置按钮
-                if (uiState.systemInfo.susfsVersionSupported && DebugFeatureGate.rootFeaturesVisible(androidx.compose.ui.platform.LocalContext.current)) {
+                if ((uiState.systemInfo.susfsVersionSupported ||
+                        (com.nekosu.BuildConfig.DEBUG && DebugFeatureGate.unlocked)) &&
+                    DebugFeatureGate.rootFeaturesVisible(androidx.compose.ui.platform.LocalContext.current)) {
                     IconButton(onClick = {
                         navigator.push(Route.SuSFSConfig)
                     }) {

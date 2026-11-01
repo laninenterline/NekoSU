@@ -37,6 +37,7 @@ import com.nekosu.ui.activity.component.NavigationBar
 import com.nekosu.ui.component.HorizontalPagerWithInteraction
 import com.nekosu.ui.rememberMaterial3BlurBackdrop
 import com.nekosu.ui.screen.BottomBarDestination
+import com.nekosu.ui.util.DebugFeatureGate
 import com.nekosu.ui.theme.ThemeConfig
 import com.nekosu.ui.theme.blurSource
 import com.nekosu.ui.util.LocalBlurState
@@ -60,8 +61,11 @@ fun MainScreen(
     val themeConfig: ThemeConfig = koinInject()
     val homeViewModel = koinViewModel<HomeViewModel>()
     val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
-    val pages = remember(homeState.systemStatus.isFullFeatured) {
-        BottomBarDestination.getPages(homeState.systemStatus.isFullFeatured)
+    val debugUnlocked = com.nekosu.BuildConfig.DEBUG && DebugFeatureGate.unlocked
+    val pages = remember(homeState.systemStatus.isFullFeatured, debugUnlocked) {
+        BottomBarDestination.getPages(
+            homeState.systemStatus.isFullFeatured || debugUnlocked,
+        )
     }
 
     val coroutineScope = rememberCoroutineScope()

@@ -171,6 +171,7 @@ fun SettingsPage(bottomPadding: Dp) {
         val logSaved = stringResource(R.string.log_saved)
         val context = LocalContext.current
         val rootFeaturesVisible = DebugFeatureGate.rootFeaturesVisible(context)
+        val debugUnlocked = com.nekosu.BuildConfig.DEBUG && DebugFeatureGate.unlocked
         val scope = rememberCoroutineScope()
         val exportProblemLogLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.CreateDocument("text/plain"),
@@ -321,7 +322,7 @@ fun SettingsPage(bottomPadding: Dp) {
             }
             if (settingsSearch.isBlank()) {
             // 配置卡片
-            if (homeState.systemStatus.isFullFeatured) {
+            if (homeState.systemStatus.isFullFeatured || debugUnlocked) {
                 item {
                     val modeItems = listOf(
                         stringResource(id = R.string.settings_mode_default),
@@ -711,7 +712,7 @@ fun SettingsPage(bottomPadding: Dp) {
                             )
                         }
 
-                        if (homeState.systemStatus.isFullFeatured && rootFeaturesVisible) {
+                        if ((homeState.systemStatus.isFullFeatured || debugUnlocked) && rootFeaturesVisible) {
                             item {
                                 SettingsJumpPageWidget(
                                     icon = Icons.TwoTone.Security,
