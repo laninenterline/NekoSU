@@ -16,13 +16,22 @@ use crate::{
 };
 
 const KSU_BLOCK_MODULES_CONFIG: &str = "/data/adb/ksu/block_modules";
+const KSU_DEFAULT_BLOCK_MODULES: &str = "vr,vklp,oplus_secure_guard,oplus_secure_guard_new,mkp";
 const KSU_BLOCK_MODULES_MAX_LEN: usize = 255;
 
 /// Read the optional kernel-module blacklist configured from the manager.
 /// The list is passed as the `block_modules` module parameter at load time
 /// (see ksu_module_blacklist_init), so it must be set before kernelsu.ko loads.
 fn read_block_modules() -> Option<String> {
-    let modules = std::fs::read_to_string(KSU_BLOCK_MODULES_CONFIG).ok()?;
+    let modules = match std::fs::read_to_string(KSU_BLOCK_MODULES_CONFIG) {
+        Ok(modules) => modules,
+        // No config file yet: use the recommended list (same default as boot-patch/ksuinit).
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => KSU_DEFAULT_BLOCK_MODULES.to_owned(),
+        Err(err) => {
+            warn!("Cannot read {KSU_BLOCK_MODULES_CONFIG}: {err}");
+            return None;
+        }
+    };
     let modules = modules.trim().to_string();
     if modules.is_empty() || modules.len() > KSU_BLOCK_MODULES_MAX_LEN {
         return None;

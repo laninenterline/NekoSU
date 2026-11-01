@@ -84,12 +84,17 @@ fun BlockModulesScreen() {
     val saveFailedMessage = stringResource(R.string.block_modules_save_failed)
 
     LaunchedEffect(Unit) {
-        val current = withContext(Dispatchers.IO) {
+        val fileState = withContext(Dispatchers.IO) {
             runCatching {
-                ShellUtils.fastCmd(repository.getRootShell(), "cat $CONFIG_PATH 2>/dev/null")
-            }.getOrDefault("").trim()
+                ShellUtils.fastCmd(
+                    repository.getRootShell(),
+                    "if [ -f $CONFIG_PATH ]; then echo exists; cat $CONFIG_PATH; else echo missing; fi",
+                )
+            }.getOrDefault("")
         }
-        text = current
+        val exists = fileState.lineSequence().firstOrNull()?.trim() == "exists"
+        val value = fileState.lineSequence().drop(1).joinToString("\n").trim()
+        text = if (exists) value else DEFAULT_BLOCK_MODULES
         val modules = withContext(Dispatchers.IO) {
             runCatching {
                 ShellUtils.fastCmd(repository.getRootShell(), "cat /proc/modules 2>/dev/null")
