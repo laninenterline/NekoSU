@@ -657,17 +657,6 @@ fun SettingsPage(bottomPadding: Dp) {
                         }
 
                         item {
-                            SettingsJumpPageWidget(
-                                icon = Icons.TwoTone.Fence,
-                                title = stringResource(R.string.custom_lkm_title),
-                                description = stringResource(R.string.custom_lkm_summary),
-                                onClick = {
-                                    navigator.push(Route.CustomLkm)
-                                },
-                            )
-                        }
-
-                        item {
                             SettingsBaseWidget(
                                 icon = Icons.TwoTone.Save,
                                 title = stringResource(R.string.settings_backup_title),

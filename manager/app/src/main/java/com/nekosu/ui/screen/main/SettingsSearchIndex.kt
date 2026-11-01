@@ -19,7 +19,6 @@ fun settingSearchEntries(): List<SettingSearchEntry> = listOf(
     SettingSearchEntry(R.string.export_problem_log, R.string.export_problem_log_summary, null, "export problem log export problem log summary"),
     SettingSearchEntry(R.string.block_modules_title, R.string.block_modules_summary, Route.BlockModules, "block modules title block modules summary"),
     SettingSearchEntry(R.string.kmi_diag_title, R.string.kmi_diag_summary, Route.KmiDiagnostics, "kmi diag title kmi diag summary"),
-    SettingSearchEntry(R.string.custom_lkm_title, R.string.custom_lkm_summary, Route.CustomLkm, "custom lkm title custom lkm summary"),
     SettingSearchEntry(R.string.settings_backup_title, R.string.settings_backup_summary, null, "settings backup title settings backup summary"),
     SettingSearchEntry(R.string.settings_restore_title, R.string.settings_restore_summary, null, "settings restore title settings restore summary"),
     SettingSearchEntry(R.string.manager_config_title, R.string.manager_config_summary, Route.DynamicManager, "manager config 管理器 动态管理器 dynamic manager signature uid slot"),
