@@ -7,4 +7,6 @@
     <color name="ic_launcher_alt_foreground">#FF1E110D</color>
     <color name="ic_launcher_resuki_background">#FFF2F2F2</color>
     <color name="ic_launcher_fina_background">#FFFFFFFF</color>
+    <color name="ic_launcher_bakasu_foreground">#FF0069A8</color>
+    <color name="ic_launcher_bakasu_background">#FFDFF2FE</color>
 </resources>
