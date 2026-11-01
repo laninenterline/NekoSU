@@ -248,13 +248,23 @@ fun SettingsPage(bottomPadding: Dp) {
                 entry.descriptionRes?.let { stringResource(it) } ?: "",
             )
         }
+        val hiddenRoutes = setOf<Route>(
+            Route.BlockModules,
+            Route.KmiDiagnostics,
+            Route.MagicaLog,
+            Route.CustomLkm,
+            Route.MultiManager,
+            Route.DynamicManager,
+            Route.UmountManager,
+        )
         val filteredSettingEntries = if (settingsSearch.isBlank()) {
             emptyList()
         } else {
             resolvedSettingEntries.filter { (entry, title, description) ->
-                title.contains(settingsSearch, ignoreCase = true) ||
-                    description.contains(settingsSearch, ignoreCase = true) ||
-                    entry.keywords.contains(settingsSearch, ignoreCase = true)
+                (rootFeaturesVisible || entry.route !in hiddenRoutes) &&
+                    (title.contains(settingsSearch, ignoreCase = true) ||
+                        description.contains(settingsSearch, ignoreCase = true) ||
+                        entry.keywords.contains(settingsSearch, ignoreCase = true))
             }
         }
 
