@@ -76,7 +76,7 @@ data class SettingsUiState(
     val showLanguageDialog: Boolean = false,
     val currentAppLocale: Locale? = null,
     val showThemeColorDialog: Boolean = false,
-    val useAltIcon: Boolean = false,
+    val iconVariant: Int = 0,
     val cardAlpha: Float = 1f,
     val backgroundDim: Float = 0f,
     val isCustomBackgroundEnabled: Boolean = false,
@@ -135,7 +135,7 @@ sealed interface SettingsUiAction {
     data object RestartActivity : SettingsUiAction
     data object ApplyDpi : SettingsUiAction
     data class SetTempDpi(val dpi: Int) : SettingsUiAction
-    data class SetAlternateIcon(val enabled: Boolean) : SettingsUiAction
+    data class SetIconVariant(val index: Int) : SettingsUiAction
     data class SetManagerUpdateCheck(val enabled: Boolean) : SettingsUiAction
     data class SetBetaUpdateCheck(val enabled: Boolean) : SettingsUiAction
     data class SetModuleUpdateCheck(val enabled: Boolean) : SettingsUiAction
@@ -347,10 +347,10 @@ class SettingsViewModel(
 
     fun saveCardConfig() = updateAppearanceAsync(AppearanceSetting.SaveCardConfig)
 
-    fun handleIconChange(enabled: Boolean) {
-        mutableState.update { it.copy(useAltIcon = enabled) }
+    fun handleIconChange(index: Int) {
+        mutableState.update { it.copy(iconVariant = index) }
         viewModelScope.launch {
-            updatePlatform(PlatformSetting.AlternateIcon(enabled))
+            updatePlatform(PlatformSetting.IconVariant(index))
                 .onSuccess {
                     applySnapshot(it, resetTempDpi = false)
                     mutableEvents.tryEmit(SettingsUiEvent.Message(R.string.icon_switched))
@@ -507,7 +507,7 @@ class SettingsViewModel(
 
             is SettingsUiAction.SetTempDpi -> updateTempDpi(action.dpi)
 
-            is SettingsUiAction.SetAlternateIcon -> handleIconChange(action.enabled)
+            is SettingsUiAction.SetIconVariant -> handleIconChange(action.index)
 
             is SettingsUiAction.SetManagerUpdateCheck -> handleCheckManagerUpdateChange(action.enabled)
 
@@ -587,7 +587,7 @@ class SettingsViewModel(
                 dynamicColorSpec = snapshot.dynamicColorSpec,
                 dynamicPaletteStyle = snapshot.dynamicPaletteStyle,
                 currentAppLocale = snapshot.currentLocaleTag?.let(Locale::forLanguageTag),
-                useAltIcon = snapshot.useAltIcon,
+                iconVariant = snapshot.iconVariant,
                 cardAlpha = snapshot.cardAlpha,
                 backgroundDim = snapshot.backgroundDim,
                 isCustomBackgroundEnabled = snapshot.customBackgroundEnabled,

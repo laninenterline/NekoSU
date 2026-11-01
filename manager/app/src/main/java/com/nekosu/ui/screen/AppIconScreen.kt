@@ -51,12 +51,11 @@ fun AppIconScreen() {
     val navigator = LocalNavigator.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
-    data class Option(val alt: Boolean, val label: Int, val preview: Int)
+    data class Option(val index: Int, val label: Int, val preview: Int)
 
-    val options = listOf(
-        Option(false, R.string.app_icon_default, R.drawable.ic_launcher_foreground),
-        Option(true, R.string.app_icon_alt, R.drawable.ic_launcher_foreground_alt),
-    )
+    val options = com.nekosu.data.settings.IconVariants.variants.mapIndexed { index, variant ->
+        Option(index, variant.labelRes, variant.previewRes)
+    }
 
     Scaffold(
         contentWindowInsets = adaptiveScaffoldWindowInsets(),
@@ -95,7 +94,7 @@ fun AppIconScreen() {
             items(options.size) { index ->
                 val option = options[index]
                 OutlinedCard(
-                    onClick = { viewModel.dispatch(SettingsUiAction.SetAlternateIcon(option.alt)) },
+                    onClick = { viewModel.dispatch(SettingsUiAction.SetIconVariant(option.index)) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
@@ -110,7 +109,7 @@ fun AppIconScreen() {
                         )
                         Column(Modifier.weight(1f)) {
                             Text(stringResource(option.label), style = MaterialTheme.typography.titleSmall)
-                            if (state.useAltIcon == option.alt) {
+                            if (state.iconVariant == option.index) {
                                 Text(
                                     stringResource(R.string.app_icon_current),
                                     style = MaterialTheme.typography.bodySmall,

@@ -17,6 +17,7 @@ import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import com.nekosu.R
 import com.nekosu.data.AppSettingsRepository
+import com.nekosu.data.settings.IconVariants
 import com.nekosu.data.shell.ShortcutRepository
 import com.nekosu.ui.MainActivity
 import com.nekosu.ui.screen.main.ShortcutType
@@ -52,13 +53,15 @@ class Shortcut(
         iconUri: String?,
         intentToken: String,
     ) {
-        val usingAltIcon = settings.getBoolean("use_alt_icon", false)
-        val mainActivity = ComponentName(context, MainActivity::class.java.name)
-        val mainActivityAlias = ComponentName(context, "${MainActivity::class.java.name}Alias")
+        val iconVariant = settings.getInt(
+            "icon_variant",
+            if (settings.getBoolean("use_alt_icon", false)) 1 else 0,
+        )
+        val mainActivity = IconVariants.componentName(context, iconVariant)
 
         val shortcutId = "module_action_$moduleId"
         val shortcutIntent = Intent().apply {
-            component = if (usingAltIcon) mainActivityAlias else mainActivity
+            component = mainActivity
             action = Intent.ACTION_VIEW
             data = buildShortcutUri(moduleId, ShortcutType.Action, intentToken)
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)

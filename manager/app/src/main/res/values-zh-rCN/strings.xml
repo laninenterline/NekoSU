@@ -706,4 +706,8 @@
     <string name="log_center_bugreport_share">分享完整日志包</string>
     <string name="log_center_bugreport_saved">完整日志包已保存</string>
     <string name="log_center_bugreport_failed">日志包导出失败</string>
+    <string name="app_icon_variant_blue">KernelSU 蓝</string>
+    <string name="app_icon_variant_green">KernelSU 绿</string>
+    <string name="app_icon_variant_purple">KernelSU 紫</string>
+    <string name="app_icon_variant_red">KernelSU 红</string>
 </resources>

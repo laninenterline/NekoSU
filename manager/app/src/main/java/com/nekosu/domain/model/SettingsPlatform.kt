@@ -12,7 +12,7 @@ data class SettingsPlatformSnapshot(
     val dynamicColorSpec: ColorSpec.SpecVersion = ColorSpec.SpecVersion.SPEC_2021,
     val dynamicPaletteStyle: PaletteStyle = PaletteStyle.TonalSpot,
     val currentLocaleTag: String? = null,
-    val useAltIcon: Boolean = false,
+    val iconVariant: Int = 0,
     val cardAlpha: Float = 1f,
     val backgroundDim: Float = 0f,
     val customBackgroundEnabled: Boolean = false,
@@ -77,7 +77,7 @@ sealed interface PlatformSetting {
     data class PredictiveBackAnimation(val value: String) : PlatformSetting
     data class PredictiveBackExitDirection(val value: String) : PlatformSetting
     data class Dpi(val value: Int) : PlatformSetting
-    data class AlternateIcon(val enabled: Boolean) : PlatformSetting
+    data class IconVariant(val index: Int) : PlatformSetting
     data class ManagerUpdateCheck(val enabled: Boolean) : PlatformSetting
     data class BetaUpdateCheck(val enabled: Boolean) : PlatformSetting
     data class ModuleUpdateCheck(val enabled: Boolean) : PlatformSetting

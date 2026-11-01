@@ -710,4 +710,8 @@
     <string name="log_center_bugreport_share">Share full log bundle</string>
     <string name="log_center_bugreport_saved">Log bundle saved</string>
     <string name="log_center_bugreport_failed">Log bundle failed</string>
+    <string name="app_icon_variant_blue">KernelSU blue</string>
+    <string name="app_icon_variant_green">KernelSU green</string>
+    <string name="app_icon_variant_purple">KernelSU purple</string>
+    <string name="app_icon_variant_red">KernelSU red</string>
 </resources>

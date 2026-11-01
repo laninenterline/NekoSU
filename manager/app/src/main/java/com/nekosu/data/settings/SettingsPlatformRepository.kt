@@ -75,7 +75,7 @@ class SettingsPlatformRepository(
             dynamicColorSpec = themeConfig.dynamicColorSpec,
             dynamicPaletteStyle = themeConfig.dynamicPaletteStyle,
             currentLocaleTag = localeHelper.getCurrentAppLocale(application)?.toLanguageTag(),
-            useAltIcon = settings.getBoolean("use_alt_icon", false),
+            iconVariant = IconVariants.loadIndex(settings),
             cardAlpha = cardConfig.cardAlpha,
             backgroundDim = themeConfig.backgroundDim,
             customBackgroundEnabled = customBackground,
@@ -183,9 +183,10 @@ class SettingsPlatformRepository(
 
             is PlatformSetting.Dpi -> settings.putInt("app_dpi", setting.value)
 
-            is PlatformSetting.AlternateIcon -> {
-                settings.putBoolean("use_alt_icon", setting.enabled)
-                toggleLauncherIcon(setting.enabled)
+            is PlatformSetting.IconVariant -> {
+                val index = IconVariants.coerce(setting.index)
+                settings.putInt("icon_variant", index)
+                toggleLauncherIcon(index)
             }
 
             is PlatformSetting.ManagerUpdateCheck -> {
@@ -337,20 +338,26 @@ class SettingsPlatformRepository(
         }
     }
 
-    private fun toggleLauncherIcon(useAlt: Boolean) {
+    private fun toggleLauncherIcon(index: Int) {
         val packageName = application.packageName
-        val main = ComponentName(packageName, "com.nekosu.ui.MainActivity")
-        val alias = ComponentName(packageName, "com.nekosu.ui.MainActivityAlias")
-        application.packageManager.setComponentEnabledSetting(
-            if (useAlt) alias else main,
-            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-            PackageManager.DONT_KILL_APP,
-        )
-        application.packageManager.setComponentEnabledSetting(
-            if (useAlt) main else alias,
-            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-            PackageManager.DONT_KILL_APP,
-        )
+        val selected = IconVariants.componentName(application, index)
+        val selectedIndex = IconVariants.coerce(index)
+        IconVariants.variants.forEachIndexed { variantIndex, variant ->
+            val component = ComponentName(
+                packageName,
+                variant.aliasClass ?: "com.nekosu.ui.MainActivity",
+            )
+            val state = if (variantIndex == selectedIndex) {
+                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            } else {
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            }
+            application.packageManager.setComponentEnabledSetting(
+                component,
+                state,
+                PackageManager.DONT_KILL_APP,
+            )
+        }
     }
 
     private fun loadModuleUpdatePreference(): Boolean {
