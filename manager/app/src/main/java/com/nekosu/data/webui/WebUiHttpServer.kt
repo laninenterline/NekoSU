@@ -135,7 +135,7 @@ class WebUiHttpServer(
             return
         }
         if (path == "/app/" || path.startsWith("/app/")) {
-            serveComposeApp(path.removePrefix("/app").ifEmpty { "/" }, out)
+            serveComposeApp(path.removePrefix("/app").ifEmpty { "/" }, out, request.headers["accept-encoding"])
             return
         }
         if (!path.startsWith("/api/")) {
@@ -342,7 +342,7 @@ class WebUiHttpServer(
         writeJson(out, 200, """{"ok":true}""")
     }
 
-    private fun serveComposeApp(rawPath: String, out: OutputStream) {
+    private fun serveComposeApp(rawPath: String, out: OutputStream, acceptEncoding: String?) {
         val relative = rawPath.trimStart('/').ifEmpty { "index.html" }
         if (relative.contains("..")) {
             writeJson(out, 400, """{"error":"bad path"}""")
@@ -353,7 +353,7 @@ class WebUiHttpServer(
         }.getOrNull()
         if (bytes == null) {
             if (!relative.substringAfterLast('/').contains('.')) {
-                serveComposeApp("index.html", out)
+                serveComposeApp("index.html", out, acceptEncoding)
             } else {
                 writeJson(out, 404, """{"error":"not found"}""")
             }
@@ -364,8 +364,20 @@ class WebUiHttpServer(
         } else {
             bytes
         }
-        writeResponse(out, 200, composeAppMime(relative), data)
+        val compressible = relative.substringAfterLast('.', "") in setOf("wasm", "js", "mjs", "ttf", "html", "css", "json", "svg")
+        val gz = if (compressible && data.size > 1024 && acceptEncoding?.contains("gzip") == true) gzipBytes(data) else null
+        if (gz != null) {
+            writeResponse(out, 200, composeAppMime(relative), gz, "gzip")
+        } else {
+            writeResponse(out, 200, composeAppMime(relative), data)
+        }
     }
+
+    private fun gzipBytes(data: ByteArray): ByteArray =
+        java.io.ByteArrayOutputStream().let { buffer ->
+            java.util.zip.GZIPOutputStream(buffer).use { it.write(data) }
+            buffer.toByteArray()
+        }
 
     private fun composeAppMime(path: String): String = when (path.substringAfterLast('.', "")) {
         "html" -> "text/html; charset=utf-8"
@@ -411,9 +423,10 @@ class WebUiHttpServer(
     private fun writeJson(out: OutputStream, code: Int, json: String) =
         writeResponse(out, code, "application/json; charset=utf-8", json.toByteArray(Charsets.UTF_8))
 
-    private fun writeResponse(out: OutputStream, code: Int, type: String, body: ByteArray) {
+    private fun writeResponse(out: OutputStream, code: Int, type: String, body: ByteArray, contentEncoding: String? = null) {
         val header = "HTTP/1.1 $code ${if (code == 200) "OK" else "NOK"}\r\n" +
             "Content-Type: $type\r\n" +
+            (contentEncoding?.let { "Content-Encoding: $it\r\n" } ?: "") +
             "Content-Length: ${body.size}\r\n" +
             "Cache-Control: no-store\r\n" +
             "Connection: close\r\n\r\n"
