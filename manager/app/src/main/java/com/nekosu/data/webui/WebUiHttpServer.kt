@@ -141,6 +141,8 @@ class WebUiHttpServer(
             path.startsWith("/api/logs") && request.method == "GET" ->
                 handleLogs(out, request.query["source"] ?: "ALL")
             path == "/api/about" && request.method == "GET" -> handleAbout(out)
+            path == "/api/settings" && request.method == "GET" -> handleSettings(out)
+            path == "/api/settings/webui" && request.method == "POST" -> handleWebUiSettings(out, request.body)
             path == "/api/refresh" && request.method == "POST" -> handleRefresh(out)
             path == "/api/stop" && request.method == "POST" -> {
                 writeJson(out, 200, """{"ok":true}""")
@@ -193,6 +195,40 @@ class WebUiHttpServer(
                 ),
             ),
         )
+    }
+
+    private fun webUiStateJson(): String = gson.toJson(
+        mapOf(
+            "enabled" to WebUiPrefs.enabled(context),
+            "randomPort" to WebUiPrefs.randomPort(context),
+            "boundPort" to WebUiPrefs.boundPort(context),
+            "fixedPort" to WebUiPrefs.fixedPort(context),
+            "version" to BuildConfig.VERSION_NAME,
+            "versionCode" to BuildConfig.VERSION_CODE,
+        ),
+    )
+
+    private fun handleSettings(out: OutputStream) {
+        writeJson(out, 200, webUiStateJson())
+    }
+
+    private fun handleWebUiSettings(out: OutputStream, body: String) {
+        val map = runCatching { gson.fromJson(body, Map::class.java) }.getOrNull()
+        val enabled = (map?.get("enabled") as? Boolean)
+        val randomPort = (map?.get("randomPort") as? Boolean)
+        if (randomPort != null) WebUiPrefs.setRandomPort(context, randomPort)
+        if (enabled != null) {
+            WebUiPrefs.setEnabled(context, enabled)
+            if (enabled) {
+                WebUiService.start(context)
+            } else {
+                WebUiService.stop(context)
+            }
+        } else if (randomPort != null && WebUiPrefs.enabled(context)) {
+            WebUiService.stop(context)
+            WebUiService.start(context)
+        }
+        writeJson(out, 200, webUiStateJson())
     }
 
     private fun handleRefresh(out: OutputStream) {

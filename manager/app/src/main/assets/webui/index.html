@@ -3,117 +3,138 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NekoSU WebUI</title>
+<title>NekoSU</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app">
-  <aside class="sidebar">
-    <div class="brand"><span class="logo">◈</span><div><b>NekoSU</b><small>WebUI</small></div></div>
-    <nav>
-      <button class="nav active" data-page="dashboard">仪表盘</button>
-      <button class="nav" data-page="modules">模块</button>
-      <button class="nav" data-page="superuser">超级用户</button>
-      <button class="nav" data-page="mirror">页面镜像</button>
-      <button class="nav" data-page="logs">日志</button>
-      <button class="nav" data-page="server">服务</button>
-      <button class="nav" data-page="about">关于</button>
-    </nav>
-    <div class="side-foot"><span id="conn-dot" class="dot"></span><span id="conn-text">连接中…</span></div>
-  </aside>
+  <nav class="rail" id="rail">
+    <div class="rail-brand"><span class="brand-mark">◈</span><span class="brand-name">NekoSU</span></div>
+    <button class="rail-item active" data-page="home"><span class="i">⌂</span><em>首页</em></button>
+    <button class="rail-item" data-page="modules"><span class="i">▦</span><em>模块</em></button>
+    <button class="rail-item" data-page="superuser"><span class="i">◉</span><em>超级用户</em></button>
+    <button class="rail-item" data-page="logs"><span class="i">≡</span><em>日志</em></button>
+    <button class="rail-item" data-page="settings"><span class="i">⚙</span><em>设置</em></button>
+    <div class="rail-foot" id="rail-status"></div>
+  </nav>
+
   <main>
-    <header class="topbar">
-      <h1 id="page-title">仪表盘</h1>
-      <div class="top-actions">
-        <button id="btn-refresh" class="ghost">刷新</button>
-        <span id="version" class="muted"></span>
+    <header class="appbar">
+      <div class="appbar-title">
+        <h1 id="title">首页</h1>
+        <small id="subtitle">临时 root（越狱模式） · WebUI</small>
+      </div>
+      <div class="appbar-actions">
+        <button class="icon-btn" id="btn-refresh" title="刷新">⟳</button>
+        <span class="chip" id="conn-chip">连接中…</span>
       </div>
     </header>
-    <section id="toast" class="toast hidden"></section>
 
-    <section class="page active" id="page-dashboard">
-      <div class="grid cards">
-        <div class="card"><div class="k">Root 状态</div><div class="v" id="st-root">—</div></div>
-        <div class="card"><div class="k">KMI</div><div class="v mono" id="st-kmi">—</div></div>
-        <div class="card"><div class="k">内核版本</div><div class="v mono" id="st-kernel">—</div></div>
-        <div class="card"><div class="k">Late-load</div><div class="v" id="st-late">—</div></div>
-        <div class="card"><div class="k">SUSFS</div><div class="v" id="st-susfs">—</div></div>
-        <div class="card"><div class="k">管理器版本</div><div class="v mono" id="st-version">—</div></div>
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- 首页 -->
+    <section class="page active" id="page-home">
+      <div class="hero card">
+        <div class="hero-left">
+          <div class="hero-status" id="home-status">正在检测 root 状态…</div>
+          <p class="muted" id="home-hint">临时 root 通过越狱 + ksud late-load 获得，重启后失效。</p>
+        </div>
+        <div class="hero-badge" id="home-badge">—</div>
       </div>
-      <div class="card wide">
-        <div class="card-title">内核详情</div>
-        <pre id="st-detail" class="json"></pre>
+
+      <div class="grid stats">
+        <div class="card stat"><div class="stat-k">KMI</div><div class="stat-v mono" id="st-kmi">—</div></div>
+        <div class="card stat"><div class="stat-k">内核版本</div><div class="stat-v mono" id="st-kernel">—</div></div>
+        <div class="card stat"><div class="stat-k">Late-load</div><div class="stat-v" id="st-late">—</div></div>
+        <div class="card stat"><div class="stat-k">Hook</div><div class="stat-v mono" id="st-hook">—</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><b>运行信息</b><span class="muted" id="st-version"></span></div>
+        <pre class="json" id="home-detail"></pre>
       </div>
     </section>
 
+    <!-- 模块 -->
     <section class="page" id="page-modules">
-      <div class="card wide">
-        <div class="card-title">已安装模块 <span id="module-count" class="muted"></span></div>
-        <div id="module-list" class="list"></div>
+      <div class="card">
+        <div class="card-head">
+          <b>已安装模块</b>
+          <div class="row"><span class="muted" id="module-count"></span><button class="ghost" id="btn-modules-refresh">刷新</button></div>
+        </div>
+        <div class="list" id="module-list"></div>
       </div>
     </section>
 
+    <!-- 超级用户 -->
     <section class="page" id="page-superuser">
-      <div class="card wide">
-        <div class="card-title">超级用户应用</div>
-        <div id="superuser-list" class="list"></div>
+      <div class="card">
+        <div class="card-head"><b>超级用户</b><span class="muted" id="su-count"></span></div>
+        <div class="list" id="superuser-list"></div>
       </div>
     </section>
 
-    <section class="page" id="page-mirror">
-      <div class="card wide">
-        <div class="card-title">与 App 完全相同的界面（实时镜像）</div>
-        <p class="muted">镜像显示设备上真实的 Manager UI；点击/拖动会转发为触摸事件。需要在管理器中开启「屏幕镜像」。</p>
-        <iframe id="mirror-frame" style="width:100%;height:78vh;border:1px solid #272d37;border-radius:12px;background:#000"></iframe>
-      </div>
-    </section>
-
+    <!-- 日志 -->
     <section class="page" id="page-logs">
-      <div class="card wide">
-        <div class="card-title">日志中心</div>
-        <div class="row">
-          <select id="log-source">
-            <option value="ALL">全部</option>
-            <option value="SULOG">SU</option>
-            <option value="MAGICA">Magica</option>
-            <option value="CRASH">Crash</option>
-            <option value="METAMODULE">Metamodule</option>
-            <option value="PROBLEM">Problem</option>
-          </select>
+      <div class="card">
+        <div class="card-head"><b>日志中心</b></div>
+        <div class="chips" id="log-sources">
+          <button class="chip active" data-source="ALL">全部</button>
+          <button class="chip" data-source="SULOG">SU</button>
+          <button class="chip" data-source="MAGICA">Magica</button>
+          <button class="chip" data-source="CRASH">Crash</button>
+          <button class="chip" data-source="METAMODULE">Metamodule</button>
+          <button class="chip" data-source="PROBLEM">Problem</button>
+        </div>
+        <div class="row search-row">
+          <input id="log-search" class="field" placeholder="搜索日志…">
           <button id="btn-log-load">加载</button>
-          <button id="btn-log-clear" class="ghost">清空显示</button>
+          <button class="ghost" id="btn-log-download">导出</button>
         </div>
-        <pre id="log-text" class="log">（选择来源后点击加载）</pre>
+        <pre class="log" id="log-text">选择日志来源后点击「加载」。</pre>
       </div>
     </section>
 
-    <section class="page" id="page-server">
-      <div class="card wide">
-        <div class="card-title">WebUI 服务</div>
-        <div class="kv"><span>地址</span><code id="srv-url">—</code></div>
-        <div class="kv"><span>Token</span><code id="srv-token">—</code></div>
-        <div class="row">
-          <button id="btn-copy-url" class="ghost">复制地址</button>
-          <button id="btn-copy-token" class="ghost">复制 Token</button>
-          <button id="btn-stop" class="danger">停止服务</button>
+    <!-- 设置 -->
+    <section class="page" id="page-settings">
+      <div class="card">
+        <div class="card-head"><b>WebUI 服务</b></div>
+        <div class="setting-row">
+          <div><div class="setting-title">启用 WebUI 服务</div><div class="setting-desc">在 127.0.0.1 提供本页面</div></div>
+          <label class="switch"><input type="checkbox" id="set-enabled"><span></span></label>
         </div>
-        <p class="muted">服务只绑定 127.0.0.1；关闭页面不会停止服务，需要在管理器或这里手动停止。</p>
+        <div class="setting-row">
+          <div><div class="setting-title">随机端口</div><div class="setting-desc">关闭时使用固定端口 8787</div></div>
+          <label class="switch"><input type="checkbox" id="set-random"><span></span></label>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-title">当前地址</div><div class="setting-desc mono" id="set-url">—</div></div>
+          <button class="ghost" id="btn-copy-url">复制</button>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-title">Token</div><div class="setting-desc mono" id="set-token">—</div></div>
+          <button class="ghost" id="btn-copy-token">复制</button>
+        </div>
       </div>
-    </section>
 
-    <section class="page" id="page-about">
-      <div class="card wide">
-        <div class="card-title">NekoSU WebUI</div>
-        <p>这是 NekoSU 管理器的浏览器版本，通过本机 HTTP 服务与同一套内核/管理器数据交互。</p>
-        <p class="muted">项目定位：临时 root（越狱模式），不刷写 boot、不提供永久 root。</p>
-        <pre id="about-detail" class="json"></pre>
+      <div class="card">
+        <div class="card-head"><b>关于</b></div>
+        <div class="setting-row"><div><div class="setting-title">NekoSU</div><div class="setting-desc" id="about-version">—</div></div></div>
+        <div class="setting-row"><div><div class="setting-title">项目定位</div><div class="setting-desc">临时 root（越狱模式），不刷写 boot、不提供永久 root</div></div></div>
+        <div class="setting-row"><div><div class="setting-title">仓库</div><div class="setting-desc mono">github.com/laninenterline/NekoSU</div></div></div>
       </div>
     </section>
   </main>
+
+  <nav class="bottomnav" id="bottomnav">
+    <button class="bnav active" data-page="home"><span>⌂</span><em>首页</em></button>
+    <button class="bnav" data-page="modules"><span>▦</span><em>模块</em></button>
+    <button class="bnav" data-page="superuser"><span>◉</span><em>超级用户</em></button>
+    <button class="bnav" data-page="logs"><span>≡</span><em>日志</em></button>
+    <button class="bnav" data-page="settings"><span>⚙</span><em>设置</em></button>
+  </nav>
 </div>
-<script>
-window.NEKO_WEBUI = { token: "__TOKEN__" };
-</script>
+<script>window.NEKO_WEBUI = { token: "__TOKEN__" };</script>
 <script src="app.js"></script>
 </body>
 </html>
