@@ -31,7 +31,7 @@
 - **仅官方独有**：`CMD_SUSFS_SET_PRIORITY_UID_FILTER (0x60030)`
 - 其余命令名称、含义一致
 
-### 优先级：P0 —— 移植 `SET_PRIORITY_UID_FILTER`
+### 优先级：P0 —— 移植 `SET_PRIORITY_UID_FILTER`（已实现，2026-11）
 
 官方 v2.3.0 新增能力：按 app 名单过滤 `getpriority()` 返回值，避免优先级探测暴露目标进程。
 
@@ -44,7 +44,7 @@
    - `sys_getpriority()`：`current_uid().val >= 10000` 时按过滤表返回
    - `proc_pid_status`/相关 cred 路径：对目标 `cred->uid` 过滤
 
-LKM 移植方案：
+LKM 实现（已完成，见 `kernel/susfs/kernel/susfs_priority.c`）：
 
 - `susfs_abi.h`：补命令常量与结构体
 - `susfs_supercall.c`：注册命令，保存 app_strings，触发解析 worker（kernel thread）
@@ -88,8 +88,8 @@ LKM 移植方案：
 
 1. **保留**：LKM 实现、LSM 注入、open-redirect/create gate、4.x 兼容层（本项目的核心价值）
 2. **不合并**：官方两个树内修复（statfs f_flags、clone_mnt race）——架构上不适用；但记录其问题模型，若引入对应 LKM 面时作为验收项
-3. **纳入待办**：
-   - P0：`SET_PRIORITY_UID_FILTER` 全链路移植（内核命令 + getpriority hook + ksud + Manager）
+3. **已实现**：
+   - P0：`SET_PRIORITY_UID_FILTER` 内核侧（supercall + setpriority/ioprio kprobe，4.19/4.14/4.9/4.4 编译验证）；ksud/Manager 控制入口待接
    - P1：kstat statfs 伪装面（含 f_flags 修复），视需求决定
 4. **验收**：每项移植后跑 4.x CI（4.19 起步）+ 真机 `getpriority` 行为验证
 
