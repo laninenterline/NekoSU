@@ -1,14 +1,18 @@
 package com.nekosu.ui.webui
 
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.nekosu.data.webui.ScreenMirror
 import com.nekosu.data.webui.WebUiPrefs
 import com.nekosu.data.webui.WebUiService
 import kotlinx.coroutines.CoroutineScope
@@ -61,6 +66,14 @@ private fun WebUiServerScreen() {
     var randomPort by remember { mutableStateOf(WebUiPrefs.randomPort(context)) }
     var boundPort by remember { mutableStateOf(WebUiPrefs.boundPort(context)) }
     var running by remember { mutableStateOf(false) }
+    var mirroring by remember { mutableStateOf(ScreenMirror.running) }
+    val projectionManager = context.getSystemService(MediaProjectionManager::class.java)
+    val mirrorLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            WebUiService.startMirror(context, result.resultCode, result.data!!)
+            mirroring = true
+        }
+    }
     val token = WebUiPrefs.token(context)
 
     fun refresh() {
@@ -104,6 +117,17 @@ private fun WebUiServerScreen() {
                         }
                     })
                 }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column {
+                        Text("屏幕镜像（与 App UI 完全相同）")
+                        Text("浏览器直接显示设备上的真实界面，点击/滑动会转发到设备", style = MaterialTheme.typography.bodySmall)
+                    }
+                    Switch(checked = mirroring, onCheckedChange = { value ->
+                        mirroring = value
+                        if (value) mirrorLauncher.launch(projectionManager.createScreenCaptureIntent())
+                        else WebUiService.stopMirror(context)
+                    })
+                }
                 Text(
                     "状态: " + if (running) "运行中（端口 ${boundPort}）" else if (enabled) "启动中…" else "未运行",
                     style = MaterialTheme.typography.bodyMedium,
@@ -127,6 +151,15 @@ private fun WebUiServerScreen() {
                 }.onFailure { Toast.makeText(context, "没有可用浏览器", Toast.LENGTH_SHORT).show() }
             },
         ) { Text("在浏览器中打开") }
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
+            enabled = boundPort > 0,
+            onClick = {
+                runCatching {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("http://127.0.0.1:$boundPort/screen?token=$token")))
+                }.onFailure { Toast.makeText(context, "没有可用浏览器", Toast.LENGTH_SHORT).show() }
+            },
+        ) { Text("打开镜像页（相同 UI）") }
         OutlinedButton(
             modifier = Modifier.fillMaxWidth(),
             onClick = {

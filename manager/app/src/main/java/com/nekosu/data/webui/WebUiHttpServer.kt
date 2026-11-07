@@ -33,6 +33,7 @@ class WebUiHttpServer(
     private val moduleRepository: ModuleRepository,
     private val superUserRepository: SuperUserRepository,
     private val logCenterRepository: LogCenterRepository,
+    private val screenSource: WebUiScreenSource? = null,
     private val onStopRequested: () -> Unit,
 ) {
     private val gson: Gson = GsonBuilder().serializeNulls().create()
@@ -115,12 +116,20 @@ class WebUiHttpServer(
 
     private fun route(request: Request, out: OutputStream) {
         val path = request.path
+        val supplied = request.headers["authorization"]?.removePrefix("Bearer ")?.trim()
+            ?: request.query["token"]
+        if (path == "/screen" || path == "/screen.mjpg") {
+            if (supplied != token) {
+                writeJson(out, 401, """{"error":"unauthorized"}""")
+                return
+            }
+            if (path == "/screen") serveStatic("screen.html", out) else handleMirror(out)
+            return
+        }
         if (!path.startsWith("/api/")) {
             serveStatic(path, out)
             return
         }
-        val supplied = request.headers["authorization"]?.removePrefix("Bearer ")?.trim()
-            ?: request.query["token"]
         if (supplied != token) {
             writeJson(out, 401, """{"error":"unauthorized"}""")
             return
@@ -137,6 +146,8 @@ class WebUiHttpServer(
                 writeJson(out, 200, """{"ok":true}""")
                 onStopRequested()
             }
+            path == "/api/input/tap" && request.method == "POST" -> handleTap(out, request.body)
+            path == "/api/input/swipe" && request.method == "POST" -> handleSwipe(out, request.body)
             path.startsWith("/api/modules/") && request.method == "POST" -> handleModuleAction(path, out)
             else -> writeJson(out, 404, """{"error":"not found"}""")
         }
@@ -212,6 +223,45 @@ class WebUiHttpServer(
         }
         if (result.isSuccess) writeJson(out, 200, """{"ok":true}""")
         else writeJson(out, 400, errorJson(result.exceptionOrNull()?.message))
+    }
+
+    private fun handleMirror(out: OutputStream) {
+        val source = screenSource
+        if (source == null || source.frame() == null) {
+            writeJson(out, 503, """{"error":"mirror not running"}""")
+            return
+        }
+        runCatching {
+            val header = "HTTP/1.1 200 OK\r\n" +
+                "Content-Type: multipart/x-mixed-replace; boundary=frame\r\n" +
+                "Cache-Control: no-store\r\nConnection: close\r\n\r\n"
+            out.write(header.toByteArray(Charsets.ISO_8859_1))
+            out.flush()
+            while (true) {
+                val frame = source.frame() ?: break
+                val partHeader = "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: ${frame.size}\r\n\r\n"
+                out.write(partHeader.toByteArray(Charsets.ISO_8859_1))
+                out.write(frame)
+                out.write("\r\n".toByteArray(Charsets.ISO_8859_1))
+                out.flush()
+                Thread.sleep(80)
+            }
+        }
+    }
+
+    private fun handleTap(out: OutputStream, body: String) {
+        val map = runCatching { gson.fromJson(body, Map::class.java) }.getOrNull()
+        val x = (map?.get("x") as? Number)?.toFloat() ?: 0f
+        val y = (map?.get("y") as? Number)?.toFloat() ?: 0f
+        screenSource?.tap(x, y)
+        writeJson(out, 200, """{"ok":true}""")
+    }
+
+    private fun handleSwipe(out: OutputStream, body: String) {
+        val map = runCatching { gson.fromJson(body, Map::class.java) }.getOrNull()
+        fun v(key: String) = (map?.get(key) as? Number)?.toFloat() ?: 0f
+        screenSource?.swipe(v("x1"), v("y1"), v("x2"), v("y2"))
+        writeJson(out, 200, """{"ok":true}""")
     }
 
     private fun serveStatic(rawPath: String, out: OutputStream) {

@@ -1,10 +1,10 @@
 (() => {
   const token = window.NEKO_WEBUI?.token || '';
   const $ = (sel) => document.querySelector(sel);
-  const pages = ['dashboard', 'modules', 'superuser', 'logs', 'server', 'about'];
+  const pages = ['dashboard', 'modules', 'superuser', 'mirror', 'logs', 'server', 'about'];
   const titles = {
     dashboard: '仪表盘', modules: '模块', superuser: '超级用户',
-    logs: '日志', server: '服务', about: '关于',
+    mirror: '页面镜像', logs: '日志', server: '服务', about: '关于',
   };
   let current = 'dashboard';
 
@@ -47,6 +47,10 @@
     if (name === 'dashboard') loadStatus().catch((e) => toast(e.message, true));
     if (name === 'modules') loadModules().catch((e) => toast(e.message, true));
     if (name === 'superuser') loadSuperUser().catch((e) => toast(e.message, true));
+    if (name === 'mirror') {
+      const frame = $('#mirror-frame');
+      if (frame) frame.src = `/screen?token=${encodeURIComponent(token)}`;
+    }
     if (name === 'server') loadServer();
     if (name === 'about') loadAbout().catch((e) => toast(e.message, true));
   }

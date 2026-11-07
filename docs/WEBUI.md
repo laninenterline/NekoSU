@@ -29,6 +29,18 @@ Manager → 设置 → **WebUI（浏览器版）** 卡片：
 3. 用设备浏览器打开 `http://127.0.0.1:8787/`（页面会内嵌 token）
    或手动访问 `http://127.0.0.1:8787/?token=<token>`
 
+## 与 App UI 完全相同：实时镜像
+
+WebUI 的「页面镜像」直接串流设备上**真实的 Manager UI**（MediaProjection → MJPEG），
+因此看到的界面与 App 完全相同，不存在两套 UI 的差异：
+
+1. Manager → 设置 → WebUI → 打开 WebUI 页面 → 开启「屏幕镜像」（首次会弹系统截屏授权）
+2. 浏览器打开 WebUI → 「页面镜像」，或直接访问 `http://127.0.0.1:<端口>/screen?token=<token>`
+3. 页面中的点击 = 触摸，拖动 = 滑动（通过 root shell `input` 注入）
+
+限制：镜像需要前台 Service 与截屏授权；分辨率默认缩放到 1080 宽、JPEG 质量 62；
+画面经本机回环 HTTP 传输，不经外网。
+
 ## 页面
 
 | 页面 | 功能 |

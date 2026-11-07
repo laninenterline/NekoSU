@@ -14,6 +14,7 @@
       <button class="nav active" data-page="dashboard">仪表盘</button>
       <button class="nav" data-page="modules">模块</button>
       <button class="nav" data-page="superuser">超级用户</button>
+      <button class="nav" data-page="mirror">页面镜像</button>
       <button class="nav" data-page="logs">日志</button>
       <button class="nav" data-page="server">服务</button>
       <button class="nav" data-page="about">关于</button>
@@ -56,6 +57,14 @@
       <div class="card wide">
         <div class="card-title">超级用户应用</div>
         <div id="superuser-list" class="list"></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-mirror">
+      <div class="card wide">
+        <div class="card-title">与 App 完全相同的界面（实时镜像）</div>
+        <p class="muted">镜像显示设备上真实的 Manager UI；点击/拖动会转发为触摸事件。需要在管理器中开启「屏幕镜像」。</p>
+        <iframe id="mirror-frame" style="width:100%;height:78vh;border:1px solid #272d37;border-radius:12px;background:#000"></iframe>
       </div>
     </section>
 
