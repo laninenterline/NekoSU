@@ -179,7 +179,7 @@ static int susfs_parse_priority_app_names(char *app_str, unsigned long *bits,
 		if (*token == '\0')
 			continue;
 		if (!susfs_is_valid_app_name(token)) {
-			SUSFS_LOGE("priority filter: invalid app name '%s'\n", token);
+			pr_err("priority filter: invalid app name '%s'\n", token);
 			return -EINVAL;
 		}
 		ret = susfs_resolve_priority_app_uid(token, &uid);
