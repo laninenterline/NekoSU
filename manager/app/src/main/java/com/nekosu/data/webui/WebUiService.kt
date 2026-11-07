@@ -14,6 +14,7 @@ import com.nekosu.data.kernel.KernelRepository
 import com.nekosu.data.logging.LogCenterRepository
 import com.nekosu.data.module.ModuleRepository
 import com.nekosu.data.packageinfo.SuperUserRepository
+import com.nekosu.data.profile.ProfileRepository
 import com.nekosu.data.shell.KsuCliRepository
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -25,6 +26,7 @@ class WebUiService : Service(), KoinComponent {
     private val superUserRepository: SuperUserRepository by inject()
     private val logCenterRepository: LogCenterRepository by inject()
     private val ksuCliRepository: KsuCliRepository by inject()
+    private val profileRepository: ProfileRepository by inject()
 
     private var server: WebUiHttpServer? = null
 
@@ -107,6 +109,7 @@ class WebUiService : Service(), KoinComponent {
             moduleRepository = moduleRepository,
             superUserRepository = superUserRepository,
             logCenterRepository = logCenterRepository,
+            profileRepository = profileRepository,
             screenSource = screenSource,
             onStopRequested = { stopServer() },
         ).also { started ->

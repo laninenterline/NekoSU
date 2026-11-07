@@ -9,6 +9,7 @@ import com.nekosu.data.logging.LogCenterRepository
 import com.nekosu.data.logging.LogSource
 import com.nekosu.data.module.ModuleRepository
 import com.nekosu.data.packageinfo.SuperUserRepository
+import com.nekosu.data.profile.ProfileRepository
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStream
@@ -33,6 +34,7 @@ class WebUiHttpServer(
     private val moduleRepository: ModuleRepository,
     private val superUserRepository: SuperUserRepository,
     private val logCenterRepository: LogCenterRepository,
+    private val profileRepository: ProfileRepository,
     private val screenSource: WebUiScreenSource? = null,
     private val onStopRequested: () -> Unit,
 ) {
@@ -157,6 +159,7 @@ class WebUiHttpServer(
             path == "/api/settings" && request.method == "GET" -> handleSettings(out)
             path == "/api/settings/webui" && request.method == "POST" -> handleWebUiSettings(out, request.body)
             path == "/api/refresh" && request.method == "POST" -> handleRefresh(out)
+            path.startsWith("/api/superuser/") && request.method == "POST" -> handleSuperuserRoot(path, out, request.body)
             path == "/api/stop" && request.method == "POST" -> {
                 writeJson(out, 200, """{"ok":true}""")
                 onStopRequested()
@@ -279,6 +282,30 @@ class WebUiHttpServer(
             superUserRepository.refresh()
         }
         writeJson(out, 200, """{"ok":true}""")
+    }
+
+    private fun handleSuperuserRoot(path: String, out: OutputStream, body: String) {
+        // /api/superuser/<uid>/root  body: {"allowed":true}
+        val segments = path.trim('/').split('/')
+        val uid = segments.getOrNull(2)?.toIntOrNull()
+        val input = runCatching { gson.fromJson(body, Map::class.java) }.getOrNull()
+        val allowed = (input?.get("allowed") as? Boolean) ?: false
+        if (uid == null || segments.getOrNull(3) != "root") {
+            writeJson(out, 400, """{"error":"bad request"}""")
+            return
+        }
+        val ok = runBlocking {
+            runCatching {
+                superUserRepository.refresh()
+                val group = superUserRepository.state.value.groups.firstOrNull { it.uid == uid } ?: return@runCatching false
+                val packageName = group.primaryPackageName
+                val current = group.profile ?: com.nekosu.domain.model.AppProfile(name = packageName, currentUid = uid)
+                val updated = current.copy(name = packageName, currentUid = uid, allowSu = allowed)
+                profileRepository.setProfile(updated)
+            }.getOrDefault(false)
+        }
+        if (ok) runBlocking { superUserRepository.refresh() }
+        writeJson(out, 200, gson.toJson(mapOf("ok" to ok, "uid" to uid, "allowed" to allowed)))
     }
 
     private fun handleModuleAction(path: String, out: OutputStream) {
