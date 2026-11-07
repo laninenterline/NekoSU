@@ -74,6 +74,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -104,6 +105,7 @@ import com.nekosu.ui.component.settings.SettingsChooseWidget
 import com.nekosu.ui.component.settings.SettingsJumpPageWidget
 import com.nekosu.ui.component.settings.SettingsSwitchWidget
 import com.nekosu.ui.navigation.LocalNavigator
+import com.nekosu.ui.webui.WebUiServerActivity
 import com.nekosu.ui.navigation.Route
 import com.nekosu.ui.theme.CardConfig
 import com.nekosu.ui.theme.ThemeConfig
@@ -129,6 +131,7 @@ private val SPACING_LARGE = 16.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsPage(bottomPadding: Dp) {
+    val context = LocalContext.current
     val navigator = LocalNavigator.current
     val scrollBehavior = rememberSearchAppBarScrollBehavior(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState()),
@@ -662,6 +665,18 @@ fun SettingsPage(bottomPadding: Dp) {
                                 title = stringResource(R.string.about),
                                 onClick = {
                                     navigator.push(Route.About)
+                                },
+                            )
+                        }
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Adb,
+                                title = stringResource(R.string.settings_webui),
+                                description = stringResource(R.string.settings_webui_summary),
+                                onClick = {
+                                    context.startActivity(
+                                        Intent(context, WebUiServerActivity::class.java),
+                                    )
                                 },
                             )
                         }

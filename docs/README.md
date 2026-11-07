@@ -12,6 +12,7 @@ NekoSU 是 KernelSU 的临时 root（越狱模式）分支，包名 `com.nekosu`
 | [发布流程](RELEASING.md) | 维护者 | 版本号、签名、Tag 与 Release 自动化 |
 | [常见问题](FAQ.md) | 用户 | 安装、临时 root、4.x、管理器兼容性 |
 | [故障排查](TROUBLESHOOTING.md) | 用户 / 维护者 | 日志位置、常见错误、Issue 模板 |
+| [WebUI](WEBUI.md) | 用户 / 开发者 | 浏览器版管理器、API、安全与限制 |
 | [参考](reference/) | 开发者 | 上游同步记录、功能差异分析 |
 
 > 项目定位：**只提供临时 root（越狱模式）**，不刷写 boot 镜像、不做 boot patch、

@@ -716,4 +716,6 @@
     <string name="app_icon_variant_fina">FinaSU</string>
     <string name="app_icon_variant_bakasu">BakaSU</string>
     <string name="block_modules_save_failed">Save failed: make sure the manager has root access</string>
+    <string name="settings_webui">WebUI（浏览器版）</string>
+    <string name="settings_webui_summary">在本机 127.0.0.1 上启动 Web 服务，用浏览器访问管理器</string>
 </resources>

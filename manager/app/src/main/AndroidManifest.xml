@@ -293,6 +293,17 @@
         </activity-alias>
 
         <activity
+            android:name=".ui.webui.WebUiServerActivity"
+            android:exported="false"
+            android:label="NekoSU WebUI"
+            android:theme="@style/Theme.KernelSU" />
+
+        <service
+            android:name=".data.webui.WebUiService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <activity
             android:name=".ui.webui.WebUIActivity"
             android:autoRemoveFromRecents="true"
             android:documentLaunchMode="intoExisting"
