@@ -1,0 +1,30 @@
+package com.nekosu.magica;
+
+import android.annotation.SuppressLint;
+import android.app.ZygotePreload;
+import android.content.pm.ApplicationInfo;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+
+import java.io.File;
+
+@SuppressLint("NewApi")
+public class AppZygotePreload implements ZygotePreload {
+    public static final String TAG = "KernelSUMagica";
+
+    private static native void forkDontCareAndExecKsud(String ksudPath, String packageName, String logPath);
+
+    @Override
+    public void doPreload(@NonNull ApplicationInfo appInfo) {
+        File f = new File(appInfo.nativeLibraryDir, "libksud.so");
+        try {
+            System.loadLibrary("kernelsu");
+            Log.d(TAG, "executing magica ...");
+            File logFile = new File(appInfo.dataDir, "files/magica_ksud.log");
+            forkDontCareAndExecKsud(f.getAbsolutePath(), appInfo.packageName, logFile.getAbsolutePath());
+        } catch (Throwable t) {
+            Log.e(TAG, "failed to late load", t);
+        }
+    }
+}

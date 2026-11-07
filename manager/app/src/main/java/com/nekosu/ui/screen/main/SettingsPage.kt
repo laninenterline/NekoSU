@@ -1,0 +1,707 @@
+package com.nekosu.ui.screen.main
+
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.add
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.twotone.Article
+import androidx.compose.material.icons.automirrored.twotone.Undo
+import androidx.compose.material.icons.twotone.Adb
+import androidx.compose.material.icons.twotone.BugReport
+import androidx.compose.material.icons.twotone.Delete
+import androidx.compose.material.icons.twotone.DeleteForever
+import androidx.compose.material.icons.twotone.ElectricalServices
+import androidx.compose.material.icons.twotone.Extension
+import androidx.compose.material.icons.twotone.Fence
+import androidx.compose.material.icons.twotone.FolderDelete
+import androidx.compose.material.icons.twotone.FolderOff
+import androidx.compose.material.icons.twotone.Info
+import androidx.compose.material.icons.twotone.Policy
+import androidx.compose.material.icons.twotone.RemoveCircle
+import androidx.compose.material.icons.twotone.RemoveModerator
+import androidx.compose.material.icons.twotone.RestartAlt
+import androidx.compose.material.icons.twotone.Save
+import androidx.compose.material.icons.twotone.Search
+import androidx.compose.material.icons.twotone.Image
+import androidx.compose.material.icons.twotone.Groups
+import androidx.compose.material.icons.twotone.Tune
+import androidx.compose.material.icons.twotone.Science
+import androidx.compose.material.icons.twotone.Security
+import androidx.compose.material.icons.twotone.Settings
+import androidx.compose.material.icons.twotone.Share
+import androidx.compose.material.icons.twotone.Update
+import androidx.compose.material.icons.twotone.VerifiedUser
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.MaterialTheme
+import com.nekosu.magica.MagicaFailureLog
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.nekosu.BuildConfig
+import com.nekosu.R
+import com.nekosu.domain.usecase.GenerateBugreportUseCase
+import com.nekosu.ui.component.ConfirmResult
+import com.nekosu.ui.component.SearchAppBar
+import com.nekosu.ui.component.rememberSearchAppBarScrollBehavior
+import com.nekosu.ui.component.SwipeableSnackbarHost
+import com.nekosu.ui.component.rememberConfirmDialog
+import com.nekosu.ui.component.rememberLoadingDialog
+import com.nekosu.ui.component.settings.SegmentedColumn
+import com.nekosu.ui.component.settings.SettingsBaseWidget
+import com.nekosu.ui.component.settings.SettingsChooseWidget
+import com.nekosu.ui.component.settings.SettingsJumpPageWidget
+import com.nekosu.ui.component.settings.SettingsSwitchWidget
+import com.nekosu.ui.navigation.LocalNavigator
+import com.nekosu.ui.navigation.Route
+import com.nekosu.ui.theme.CardConfig
+import com.nekosu.ui.theme.ThemeConfig
+import com.nekosu.ui.theme.blurEffect
+import com.nekosu.ui.theme.blurSource
+import com.nekosu.ui.util.LocalSnackbarHost
+import com.nekosu.ui.util.adaptiveScaffoldWindowInsets
+import com.nekosu.ui.util.showReplacingSnackbar
+import com.nekosu.ui.viewmodel.HomeViewModel
+import com.nekosu.ui.viewmodel.SettingsUiAction
+import com.nekosu.ui.viewmodel.SettingsViewModel
+import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
+
+/**
+ * @author ShirkNeko
+ * @date 2025/9/29.
+ */
+
+private val SPACING_MEDIUM = 8.dp
+private val SPACING_LARGE = 16.dp
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsPage(bottomPadding: Dp) {
+    val navigator = LocalNavigator.current
+    val scrollBehavior = rememberSearchAppBarScrollBehavior(
+        TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState()),
+    )
+    val snackBarHost = LocalSnackbarHost.current
+    val settingsViewModel = koinViewModel<SettingsViewModel>()
+    val homeViewModel = koinViewModel<HomeViewModel>()
+    val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    var settingsSearch by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        settingsViewModel.dispatch(SettingsUiAction.LoadFeatureSettings)
+    }
+
+    Scaffold(
+        topBar = {
+            SearchAppBar(
+                title = stringResource(R.string.settings),
+                searchText = settingsSearch,
+                onSearchTextChange = { settingsSearch = it },
+                scrollBehavior = scrollBehavior,
+                searchBarPlaceHolderText = stringResource(R.string.settings_search_hint),
+            )
+        },
+        snackbarHost = {
+            SwipeableSnackbarHost(
+                modifier = Modifier.padding(bottom = bottomPadding),
+                hostState = snackBarHost,
+            )
+        },
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        contentWindowInsets = adaptiveScaffoldWindowInsets(includeBottom = false),
+    ) { innerPadding ->
+        val loadingDialog = rememberLoadingDialog()
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        val exportSettingsLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/octet-stream"),
+        ) { uri: Uri? ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            scope.launch(Dispatchers.IO) {
+                val ok = runCatching {
+                    val source = preferencesBackupFile(context)
+                    if (!source.isFile) return@runCatching false
+                    context.contentResolver.openOutputStream(uri)?.use { output ->
+                        source.inputStream().use { it.copyTo(output) }
+                    } != null
+                }.getOrDefault(false)
+                withContext(Dispatchers.Main) {
+                    snackBarHost.showReplacingSnackbar(
+                        context.getString(if (ok) R.string.settings_backup_saved else R.string.settings_backup_failed),
+                    )
+                }
+            }
+        }
+        val importSettingsLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.OpenDocument(),
+        ) { uri: Uri? ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            scope.launch(Dispatchers.IO) {
+                val ok = runCatching {
+                    val target = preferencesBackupFile(context)
+                    target.parentFile?.mkdirs()
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        target.outputStream().use { output -> input.copyTo(output) }
+                    } != null && target.length() > 0
+                }.getOrDefault(false)
+                withContext(Dispatchers.Main) {
+                    snackBarHost.showReplacingSnackbar(
+                        context.getString(if (ok) R.string.settings_restore_done else R.string.settings_backup_failed),
+                    )
+                }
+            }
+        }
+        val resolvedSettingEntries = (settingSearchEntries() + extraSettingSearchEntries()).map { entry ->
+            Triple(
+                entry,
+                stringResource(entry.titleRes),
+                entry.descriptionRes?.let { stringResource(it) } ?: "",
+            )
+        }
+        val filteredSettingEntries = if (settingsSearch.isBlank()) {
+            emptyList()
+        } else {
+            resolvedSettingEntries.filter { (entry, title, description) ->
+                (title.contains(settingsSearch, ignoreCase = true) ||
+                        description.contains(settingsSearch, ignoreCase = true) ||
+                        entry.keywords.contains(settingsSearch, ignoreCase = true))
+            }
+        }
+
+        LazyColumn(
+            modifier =
+                Modifier
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .blurSource(),
+            contentPadding = PaddingValues(
+                top = innerPadding.calculateTopPadding() + 5.dp,
+                start = 0.dp,
+                end = 0.dp,
+                bottom = innerPadding.calculateBottomPadding() + bottomPadding + 15.dp,
+            ),
+        ) {
+            if (settingsSearch.isNotBlank()) {
+                if (filteredSettingEntries.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 24.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(stringResource(R.string.settings_search_empty))
+                        }
+                    }
+                } else {
+                    items(filteredSettingEntries, key = { it.second }) { (entry, title, description) ->
+                        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Search,
+                                title = title,
+                                description = description.ifBlank {
+                                    stringResource(R.string.settings_search_in_page)
+                                },
+                                onClick = {
+                                    val route = entry.route
+                                    if (route != null) {
+                                        navigator.push(route)
+                                    } else {
+                                        settingsSearch = ""
+                                        scope.launch {
+                                            snackBarHost.showReplacingSnackbar(
+                                                context.getString(R.string.settings_search_cleared),
+                                            )
+                                        }
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+            if (settingsSearch.isBlank()) {
+            // 配置卡片
+            if (homeState.systemStatus.isFullFeatured) {
+                item {
+                    val modeItems = listOf(
+                        stringResource(id = R.string.settings_mode_default),
+                        stringResource(id = R.string.settings_mode_disable_until_reboot),
+                        stringResource(id = R.string.settings_mode_disable_always),
+                    )
+
+                    SegmentedColumn(
+                        title = stringResource(R.string.configuration),
+                        content = {
+                            item {
+                                // 配置文件模板入口
+                                SettingsJumpPageWidget(
+                                    icon = Icons.TwoTone.Fence,
+                                    title = stringResource(R.string.settings_profile_template),
+                                    description = stringResource(R.string.settings_profile_template_summary),
+                                    onClick = {
+                                        navigator.push(Route.AppProfileTemplate)
+                                    },
+                                )
+                            }
+
+                            item {
+                                // 内核模块黑名单（预设不加载的内核模块）
+                                SettingsJumpPageWidget(
+                                    icon = Icons.TwoTone.RemoveModerator,
+                                    title = stringResource(R.string.block_modules_title),
+                                    description = stringResource(R.string.block_modules_summary),
+                                    onClick = {
+                                        navigator.push(Route.BlockModules)
+                                    },
+                                )
+                            }
+
+                            item {
+                                val suSummary = when (uiState.suStatus) {
+                                    "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
+                                    "managed" -> stringResource(id = R.string.feature_status_managed_summary)
+                                    "forced" -> stringResource(id = R.string.feature_status_forced_summary)
+                                    else -> stringResource(id = R.string.settings_sucompat_summary)
+                                }
+                                SettingsChooseWidget(
+                                    icon = Icons.TwoTone.RemoveModerator,
+                                    title = stringResource(id = R.string.settings_sucompat),
+                                    description = suSummary,
+                                    items = modeItems,
+                                    enabled = uiState.suStatus == "supported",
+                                    selectedIndex = uiState.suCompatMode,
+                                    onSelectedIndexChange = { index ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetSuCompatMode(
+                                                index,
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+
+                            item {
+                                val umountSummary = when (uiState.kernelUmountStatus) {
+                                    "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
+                                    "managed" -> stringResource(id = R.string.feature_status_managed_summary)
+                                    "forced" -> stringResource(id = R.string.feature_status_forced_summary)
+                                    else -> stringResource(id = R.string.settings_kernel_umount_summary)
+                                }
+                                SettingsSwitchWidget(
+                                    icon = Icons.TwoTone.RemoveCircle,
+                                    title = stringResource(id = R.string.settings_kernel_umount),
+                                    description = umountSummary,
+                                    enabled = uiState.kernelUmountStatus == "supported",
+                                    checked = uiState.isKernelUmountEnabled,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetKernelUmount(
+                                                enabled,
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+
+                            item(
+                                visible = homeState.systemStatus.isLateLoadMode,
+                            ) {
+                                SettingsSwitchWidget(
+                                    icon = Icons.TwoTone.ElectricalServices,
+                                    title = stringResource(id = R.string.settings_auto_jailbreak),
+                                    description = stringResource(id = R.string.settings_auto_jailbreak_summary),
+                                    checked = uiState.autoJailbreakEnabled,
+                                    onCheckedChange = { value ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetAutoJailbreak(
+                                                value,
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+
+                            item {
+                                val adbRootSummary = when (uiState.adbRootStatus) {
+                                    "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
+                                    "managed" -> stringResource(id = R.string.feature_status_managed_summary)
+                                    "forced" -> stringResource(id = R.string.feature_status_forced_summary)
+                                    else -> stringResource(id = R.string.settings_adb_root_summary)
+                                }
+
+                                SettingsSwitchWidget(
+                                    icon = Icons.TwoTone.Adb,
+                                    title = stringResource(id = R.string.settings_adb_root),
+                                    description = adbRootSummary,
+                                    checked = uiState.isAdbRootEnabled,
+                                    enabled = uiState.adbRootStatus == "supported",
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetAdbRoot(
+                                                enabled,
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+
+                            item {
+                                val shellSuAdbOnlySummary = when (uiState.shellSuAdbOnlyStatus) {
+                                    "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
+                                    "managed" -> stringResource(id = R.string.feature_status_managed_summary)
+                                    "forced" -> stringResource(id = R.string.feature_status_forced_summary)
+                                    else -> stringResource(id = R.string.settings_shell_su_adb_only_summary)
+                                }
+                                SettingsSwitchWidget(
+                                    icon = Icons.TwoTone.VerifiedUser,
+                                    title = stringResource(id = R.string.settings_shell_su_adb_only),
+                                    description = shellSuAdbOnlySummary,
+                                    enabled = uiState.shellSuAdbOnlyStatus == "supported",
+                                    checked = uiState.isShellSuAdbOnlyEnabled,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(SettingsUiAction.SetShellSuAdbOnly(enabled))
+                                    },
+                                )
+                            }
+
+                            item {
+                                SettingsSwitchWidget(
+                                    icon = Icons.TwoTone.RestartAlt,
+                                    title = stringResource(id = R.string.settings_soft_reboot),
+                                    description = stringResource(id = R.string.settings_soft_reboot_summary),
+                                    enabled = homeState.systemStatus.isFullFeatured &&
+                                        !homeState.systemStatus.isLateLoadMode,
+                                    checked = homeState.systemStatus.isLateLoadMode || uiState.useSoftReboot,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetUseSoftReboot(
+                                                enabled,
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+
+                            item {
+                                val sulogSummary = when (uiState.sulogStatus) {
+                                    "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
+                                    "managed" -> stringResource(id = R.string.feature_status_managed_summary)
+                                    "forced" -> stringResource(id = R.string.feature_status_forced_summary)
+                                    else -> stringResource(id = R.string.settings_sulog_summary)
+                                }
+                                SettingsSwitchWidget(
+                                    icon = Icons.AutoMirrored.TwoTone.Article,
+                                    title = stringResource(id = R.string.settings_sulog),
+                                    description = sulogSummary,
+                                    enabled = uiState.sulogStatus == "supported",
+                                    checked = uiState.isSuLogEnabled,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(SettingsUiAction.SetSuLog(enabled))
+                                    },
+                                )
+                            }
+
+                            item {
+                                val selinuxHideSummary = when (uiState.selinuxHideStatus) {
+                                    "unsupported" -> stringResource(id = R.string.feature_status_unsupported_summary)
+                                    "managed" -> stringResource(id = R.string.feature_status_managed_summary)
+                                    "forced" -> stringResource(id = R.string.feature_status_forced_summary)
+                                    else -> stringResource(id = R.string.settings_selinux_hide_summary)
+                                }
+                                SettingsSwitchWidget(
+                                    icon = Icons.TwoTone.Policy,
+                                    title = stringResource(id = R.string.settings_selinux_hide),
+                                    description = selinuxHideSummary,
+                                    enabled = uiState.selinuxHideStatus == "supported",
+                                    checked = uiState.isSelinuxHideEnabled,
+                                    onCheckedChange = { checked ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetSelinuxHide(
+                                                checked,
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+
+                            item {
+                                // 卸载模块开关
+                                SettingsSwitchWidget(
+                                    icon = Icons.TwoTone.FolderDelete,
+                                    title = stringResource(id = R.string.settings_umount_modules_default),
+                                    description = stringResource(id = R.string.settings_umount_modules_default_summary),
+                                    checked = uiState.defaultUmountModules,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetDefaultUmountModules(
+                                                enabled,
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+                        },
+                    )
+                }
+            }
+
+            item {
+                // 应用设置卡片
+                SegmentedColumn(
+                    title = stringResource(R.string.app_settings),
+                    content = {
+                        expandableItem(
+                            expanded = uiState.checkManagerUpdate,
+                            topContent = {
+                                SettingsSwitchWidget(
+                                    icon = Icons.TwoTone.Update,
+                                    title = stringResource(R.string.settings_check_manager_update),
+                                    description = stringResource(R.string.settings_check_manager_update_summary),
+                                    checked = uiState.checkManagerUpdate,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetManagerUpdateCheck(
+                                                enabled,
+                                            ),
+                                        )
+                                    },
+                                )
+                            },
+                        ) {
+                            item(
+                                topPadding = 1.dp,
+                            ) {
+                                SettingsSwitchWidget(
+                                    icon = Icons.TwoTone.Science,
+                                    title = stringResource(R.string.settings_check_beta_update),
+                                    description = stringResource(R.string.settings_check_beta_update_summary),
+                                    checked = uiState.checkBetaUpdate,
+                                    onCheckedChange = { enabled ->
+                                        settingsViewModel.dispatch(
+                                            SettingsUiAction.SetBetaUpdateCheck(
+                                                enabled,
+                                            ),
+                                        )
+                                    },
+                                )
+                            }
+                        }
+
+                        item {
+                            SettingsSwitchWidget(
+                                icon = Icons.TwoTone.Extension,
+                                title = stringResource(R.string.settings_check_module_update),
+                                description = stringResource(R.string.settings_check_module_update_summary),
+                                checked = uiState.checkModuleUpdate,
+                                onCheckedChange = { enabled ->
+                                    settingsViewModel.dispatch(
+                                        SettingsUiAction.SetModuleUpdateCheck(
+                                            enabled,
+                                        ),
+                                    )
+                                },
+                            )
+                        }
+
+                        item {
+                            // 更多设置
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Settings,
+                                title = stringResource(R.string.theme_settings),
+                                description = stringResource(R.string.theme_settings),
+                                onClick = {
+                                    navigator.push(Route.ThemeSettings)
+                                },
+                            )
+                        }
+                    },
+                )
+            }
+
+            item {
+                // 工具卡片
+                SegmentedColumn(
+                    title = stringResource(R.string.tools),
+                    content = {
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Science,
+                                title = stringResource(R.string.kmi_diag_title),
+                                description = stringResource(R.string.kmi_diag_summary),
+                                onClick = {
+                                    navigator.push(Route.KmiDiagnostics)
+                                },
+                            )
+                        }
+
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.AutoMirrored.TwoTone.Article,
+                                title = stringResource(R.string.log_center_title),
+                                description = stringResource(R.string.log_center_summary),
+                                onClick = {
+                                    navigator.push(Route.LogCenter)
+                                },
+                            )
+                        }
+
+                        item {
+                            SettingsBaseWidget(
+                                icon = Icons.TwoTone.Save,
+                                title = stringResource(R.string.settings_backup_title),
+                                description = stringResource(R.string.settings_backup_summary),
+                                onClick = {
+                                    exportSettingsLauncher.launch("NekoSU_settings_backup.bin")
+                                },
+                            )
+                        }
+
+                        item {
+                            SettingsBaseWidget(
+                                icon = Icons.TwoTone.RestartAlt,
+                                title = stringResource(R.string.settings_restore_title),
+                                description = stringResource(R.string.settings_restore_summary),
+                                onClick = {
+                                    importSettingsLauncher.launch(arrayOf("application/octet-stream", "*/*"))
+                                },
+                            )
+                        }
+
+                        if (homeState.systemStatus.isFullFeatured) {
+                            item {
+                                SettingsJumpPageWidget(
+                                    icon = Icons.TwoTone.Security,
+                                    title = stringResource(R.string.manager_config_title),
+                                    description = stringResource(R.string.manager_config_summary),
+                                    onClick = {
+                                        navigator.push(Route.DynamicManager)
+                                    },
+                                )
+                            }
+
+                            item(visible = uiState.isKernelUmountEnabled) {
+                                SettingsJumpPageWidget(
+                                    icon = Icons.TwoTone.FolderOff,
+                                    title = stringResource(R.string.umount_path_manager),
+                                    description = stringResource(R.string.umount_path_manager_summary),
+                                    onClick = {
+                                        navigator.push(Route.UmountManager)
+                                    },
+                                )
+                            }
+                        }
+                    },
+                )
+            }
+
+
+            }
+
+            // 关于卡片
+            item {
+                SegmentedColumn(
+                    title = stringResource(R.string.about),
+                    content = {
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Info,
+                                title = stringResource(R.string.about),
+                                onClick = {
+                                    navigator.push(Route.About)
+                                },
+                            )
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun TopBar(
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+) {
+    val themeConfig: ThemeConfig = koinInject()
+    val cardConfig: CardConfig = koinInject()
+    LargeFlexibleTopAppBar(
+        modifier = Modifier.blurEffect(),
+        title = {
+            Text(text = stringResource(R.string.settings))
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor =
+                if (themeConfig.isEnableBlur) {
+                    Color.Transparent
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainer.copy(cardConfig.cardAlpha)
+                },
+            scrolledContainerColor =
+                if (themeConfig.isEnableBlur) {
+                    Color.Transparent
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainer.copy(cardConfig.cardAlpha)
+                },
+        ),
+        windowInsets = TopAppBarDefaults.windowInsets.add(WindowInsets(left = 12.dp)),
+        scrollBehavior = scrollBehavior,
+    )
+}
+
+private fun preferencesBackupFile(context: android.content.Context): java.io.File =
+    java.io.File(java.io.File(context.filesDir, "datastore"), "app_preferences.preferences_pb")

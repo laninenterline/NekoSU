@@ -1,0 +1,120 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.0-canary.5)'
+        required: false
+        default: '' 
+
+permissions:
+  contents: write
+
+jobs:
+  lkm:
+    uses: ./.github/workflows/build-lkm.yml
+    secrets: inherit
+    with:
+      kmis: '["android12-5.10","android13-5.10","android13-5.15","android14-5.15","android14-6.1","android15-6.6","android16-6.12","android17-6.18"]'
+
+  apk:
+    needs: lkm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download LKM assets
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lkm-*
+          path: userspace/ksud/bin/aarch64
+          merge-multiple: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK (preinstalled)
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          [ -d "$SDK" ] || SDK=/usr/local/lib/android/sdk
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          SDKM=$(ls "$SDK"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1)
+          test -n "$SDKM" || { echo "sdkmanager not found under $SDK"; exit 1; }
+          echo "SDKMANAGER=$SDKM" >> "$GITHUB_ENV"
+
+      - name: Install Android SDK components
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install \
+            "build-tools;36.1.0" \
+            "cmake;4.1.0" \
+            "ndk;29.0.14206865" \
+            "platforms;android-37.0" >/dev/null
+          # AGP asks for "platforms/android-37"; API 37 ships as android-37.0
+          ln -sfn android-37.0 "$ANDROID_SDK_ROOT/platforms/android-37"
+          ls "$ANDROID_SDK_ROOT/platforms"
+      - name: Setup Rust (nightly)
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: aarch64-linux-android
+
+      - name: Build ksud
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
+          NDKBIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CC_aarch64_linux_android="$NDKBIN/aarch64-linux-android29-clang"
+          export CXX_aarch64_linux_android="$NDKBIN/aarch64-linux-android29-clang++"
+          export AR_aarch64_linux_android="$NDKBIN/llvm-ar"
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDKBIN/aarch64-linux-android29-clang"
+          # bindgen must cross-compile headers against the NDK sysroot
+          SYSROOT="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
+          export BINDGEN_EXTRA_CLANG_ARGS="--target=aarch64-linux-android --sysroot=$SYSROOT"
+          export BINDGEN_EXTRA_CLANG_ARGS_aarch64_linux_android="$BINDGEN_EXTRA_CLANG_ARGS"
+          cargo +nightly build --target aarch64-linux-android --release \
+            --manifest-path userspace/ksud/Cargo.toml
+          mkdir -p manager/app/src/main/jniLibs/arm64-v8a
+          cp userspace/ksud/target/aarch64-linux-android/release/ksud \
+             manager/app/src/main/jniLibs/arm64-v8a/libksud.so
+
+      - name: Prepare signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "RELEASE_KEYSTORE_BASE64 secret is required"; exit 1; }
+          printf '%s' "$KEYSTORE_B64" | base64 -d > /tmp/release.jks
+
+      - name: Build signed release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > manager/local.properties
+          cd manager
+          ./gradlew :app:assembleRelease --no-configuration-cache \
+            -PKEYSTORE_FILE=/tmp/release.jks \
+            -PKEYSTORE_PASSWORD="$KEYSTORE_PASSWORD" \
+            -PKEY_ALIAS="$KEY_ALIAS" \
+            -PKEY_PASSWORD="$KEY_PASSWORD"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          APK=$(ls -t manager/app/build/outputs/apk/release/*arm64-v8a-release.apk | head -1)
+          test -n "$APK"
+          PRERELEASE=""
+          case "$TAG" in *canary*|*beta*|*alpha*) PRERELEASE="--prerelease" ;; esac
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" "$APK" $PRERELEASE --title "NekoSU $TAG" --generate-notes
