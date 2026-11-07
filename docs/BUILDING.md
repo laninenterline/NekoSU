@@ -24,6 +24,8 @@ cd manager
 
 ## 内核 LKM（5.x GKI）
 
+> 构建产物用于 late-load 临时 root，本项目不提供 boot 镜像 patching。
+
 由 `.github/workflows/build-lkm.yml` 在 CI 中针对 DDK 镜像构建；本地可用
 `scripts/build_kmi.sh`，按脚本头部参数传入 KDIR、KMI、OUT 等。
 

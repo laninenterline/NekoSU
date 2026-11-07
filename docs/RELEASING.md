@@ -1,5 +1,7 @@
 # 发布流程
 
+> 发布定位：**临时 root（越狱模式）only**，发布说明中不得宣称永久 root / boot 刷写。
+
 ## 版本号
 
 - 版本来自 tag：`vMAJOR.MINOR.PATCH`

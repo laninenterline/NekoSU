@@ -16,10 +16,10 @@
 
 ## 启动链
 
-1. boot image 中集成 KernelSU 内核模块（LKM 或 GKI）
-2. `ksud` 在 late-load 阶段根据运行内核 KMI 选择 `userspace/ksud/bin/aarch64/` 下的预编译 ko
+1. 不刷写 boot 镜像：设备先通过越狱入口取得临时 root（本项目不提供永久 root）
+2. `ksud` 通过 `late-load` 从用户态加载内核模块，并按运行内核 KMI 选择 `userspace/ksud/bin/aarch64/` 下的预编译 ko
 3. `libksud.so` 随 Manager 打包，负责安装、模块管理、日志与 supercall
-4. Manager 通过 supercall 与内核通信，提供 UI
+4. Manager 通过 supercall 与内核通信，提供 UI；重启后模块卸载，需要重新越狱
 
 ## KMI 选择
 

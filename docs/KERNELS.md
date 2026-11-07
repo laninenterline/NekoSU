@@ -1,5 +1,8 @@
 # 内核支持
 
+> 本项目**只提供临时 root（越狱模式）**：所有内核的 ko 都通过用户态 late-load 加载，
+> 不刷写 boot 镜像，重启后失效。
+
 ## 支持矩阵
 
 | 内核系列 | KMI | kernelsu.ko | SUSFS LKM | 状态 |

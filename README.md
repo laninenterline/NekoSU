@@ -2,7 +2,7 @@
 
 # NekoSU
 
-**基于 KernelSU 的内核级 root 方案，支持 GKI 5.x 与 4.x 传统内核**
+**KernelSU 临时 root（越狱模式）管理器，支持 GKI 5.x 与 4.x 传统内核**
 
 [![Release](https://img.shields.io/github/v/release/laninenterline/NekoSU?label=release)](https://github.com/laninenterline/NekoSU/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/laninenterline/NekoSU/release.yml?label=build)](https://github.com/laninenterline/NekoSU/actions)
@@ -13,12 +13,14 @@
 
 ## 简介
 
-NekoSU 是 KernelSU 的分支版本，包名 `com.nekosu`，提供内核模块 + 用户态守护进程 +
-Android 管理器的完整 root 方案。支持 GKI 内核（5.4 – 6.18）以及 4.19 / 4.14 / 4.9 / 4.4
+NekoSU 是 KernelSU 的分支版本，包名 `com.nekosu`，**只提供临时 root（越狱模式）**：
+不刷写 boot 镜像、不修改系统分区，通过越狱入口获得权限后由 `ksud` 从用户态 late-load
+内核模块，**重启后 root 失效**。支持 GKI 内核（5.4 – 6.18）以及 4.19 / 4.14 / 4.9 / 4.4
 传统内核（实验性）。
 
 ## 特性
 
+- **临时 root / 越狱模式**：一键越狱（Magica）、`ksud late-load`，不触碰 boot 分区
 - **KernelSU 兼容**：继承 KernelSU 的 supercall、模块、App Profile、SELinux 处理
 - **SUSFS**：内置 SUSFS 支持，5.x 与 4.x 均提供 LKM（4.x 由 CI 交叉编译）
 - **多管理器**：可与其他 KernelSU 分支管理器共存并动态合并
@@ -27,11 +29,20 @@ Android 管理器的完整 root 方案。支持 GKI 内核（5.4 – 6.18）以�
 - **设置搜索**：全量设置项可搜索
 - **4.x 支持**：4.19 / 4.14 / 4.9 / 4.4 预编译 LKM（实验性，见 [内核支持](docs/KERNELS.md)）
 
-## 安装
+## 使用（临时 root / 越狱模式）
+
+> **本项目只提供临时 root**：不刷写 boot 镜像、不做 boot patch、不提供永久 root 或永久卸载。
+> 每次重启后需要重新越狱并 late-load 内核模块。
 
 1. 从 [Releases](https://github.com/laninenterline/NekoSU/releases) 下载 APK
-2. 按设备内核选择安装方式：GKI 设备刷入 boot 镜像；4.x 设备通过 `ksud` late-load
-3. 首次启动按管理器引导完成安装
+2. 通过越狱入口取得临时 root（一键越狱 Magica，或手动 `ksud late-load`）
+3. 管理器检测到临时 root 后即可管理模块、SU、日志等
+
+手动方式：
+
+```bash
+ksud late-load --allow-shell --package-name com.nekosu
+```
 
 > 需要 Android 8.0+；4.4 内核（Android 7）设备无法安装管理器，仅支持 ksud 手动模式。
 
@@ -69,6 +80,7 @@ docs/              文档（架构 / 构建 / 内核 / 发布）
 - [构建指南](docs/BUILDING.md)
 - [内核支持](docs/KERNELS.md)
 - [发布流程](docs/RELEASING.md)
+- [临时 root 说明](docs/TEMPORARY-ROOT.md)
 
 ## 致谢
 
