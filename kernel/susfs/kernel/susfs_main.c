@@ -455,6 +455,14 @@ static int __init susfs_init(void)
         }
     }
 
+    /* Priority uid filter (official v2.3.0): syscall-entry kprobes, armed only when both the
+     * probes and the (optional) symbol lookup succeeded.  Non-fatal: the filter is an extra
+     * hide layer, not a prerequisite for the module. */
+    if (susfs_priority_init())
+        pr_warn("susfs_guard_lkm: priority uid filter stays off\n");
+    else
+        susfs_supercall_arm_feature(SUSFS_FEAT_PRIORITY_UID_FILTER);
+
     /* Registered last and undone implicitly: these are entries in sus_path's table, which
      * sus_path_exit() empties while its LSM layer still answers ENOENT for the nodes. */
     susfs_self_hide_nodes();
@@ -477,6 +485,7 @@ static int __init susfs_init(void)
 
 static void __exit susfs_exit(void)
 {
+    susfs_priority_exit();
     susfs_layers_down((int)ARRAY_SIZE(susfs_layers) - 1);
     SUSFS_LOGI("susfs_guard_lkm: exit\n");
 }

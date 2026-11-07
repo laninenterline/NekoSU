@@ -102,6 +102,7 @@ static const struct feature_entry enabled_features[] = {
 	{ "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG\n",	SUSFS_FEAT_SPOOF_CMDLINE },
 	{ "CONFIG_KSU_SUSFS_OPEN_REDIRECT\n",	SUSFS_FEAT_OPEN_REDIRECT },
 	{ "CONFIG_KSU_SUSFS_SUS_MAP\n",		SUSFS_FEAT_SUS_MAP },
+	{ "CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER\n",	SUSFS_FEAT_PRIORITY_UID_FILTER },
 	/* hide_modules is not upstream's, so it is not listed here - the feature itself is unchanged. */
 };
 
@@ -194,6 +195,9 @@ static void susfs_tw_func(struct callback_head *cb)
 	case CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS:
 		susfs_sus_mount_supercall(&arg);
 		break;
+	case CMD_SUSFS_SET_PRIORITY_UID_FILTER:
+		susfs_set_priority_uid_filter(&arg);
+		break;
 	default:
 		/* Unreachable: reboot_pre() only defers a command susfs_cmd_handled()
 		 * accepted.  Kept as a net in case the two lists drift apart. */
@@ -247,6 +251,8 @@ static int susfs_cmd_feature(unsigned int cmd)
 		return SUSFS_FEAT_OPEN_REDIRECT;
 	case CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS:
 		return SUSFS_FEAT_SUS_MOUNT;
+	case CMD_SUSFS_SET_PRIORITY_UID_FILTER:
+		return SUSFS_FEAT_PRIORITY_UID_FILTER;
 	default:
 		return -1;
 	}

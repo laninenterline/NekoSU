@@ -158,6 +158,7 @@ enum susfs_feature {
 	SUSFS_FEAT_OPEN_REDIRECT,
 	SUSFS_FEAT_SUS_MAP,
 	SUSFS_FEAT_AVC_SPOOF,	/* commands only: no upstream CONFIG_* line for it */
+	SUSFS_FEAT_PRIORITY_UID_FILTER,	/* official v2.3.0: getpriority/ioprio uid filter */
 	SUSFS_FEAT_COUNT,
 };
 
@@ -174,6 +175,11 @@ void sus_path_supercall(unsigned int cmd, void __user **arg);
 void susfs_kstat_supercall(unsigned int cmd, void __user **arg);
 void susfs_open_redirect_supercall(void __user **arg);
 void susfs_sus_mount_supercall(void __user **arg);
+void susfs_set_priority_uid_filter(void __user **arg);
+bool susfs_is_priority_uid_filtered(uid_t uid);
+bool susfs_priority_active(void);
+int susfs_priority_init(void);
+void susfs_priority_exit(void);
 
 int susfs_hide_syms_init(void);
 void susfs_hide_syms_exit(void);
