@@ -126,6 +126,18 @@ class WebUiHttpServer(
             if (path == "/screen") serveStatic("screen.html", out) else handleMirror(out)
             return
         }
+        if (path == "/app") {
+            // Redirect so relative asset paths resolve under /app/
+            val target = "/app/?token=" + java.net.URLEncoder.encode(token, "UTF-8")
+            val header = "HTTP/1.1 302 Found\r\nLocation: $target\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+            out.write(header.toByteArray(Charsets.ISO_8859_1))
+            out.flush()
+            return
+        }
+        if (path == "/app/" || path.startsWith("/app/")) {
+            serveComposeApp(path.removePrefix("/app").ifEmpty { "/" }, out)
+            return
+        }
         if (!path.startsWith("/api/")) {
             serveStatic(path, out)
             return
@@ -141,6 +153,7 @@ class WebUiHttpServer(
             path.startsWith("/api/logs") && request.method == "GET" ->
                 handleLogs(out, request.query["source"] ?: "ALL")
             path == "/api/about" && request.method == "GET" -> handleAbout(out)
+            path == "/api/home" && request.method == "GET" -> handleHome(out)
             path == "/api/settings" && request.method == "GET" -> handleSettings(out)
             path == "/api/settings/webui" && request.method == "POST" -> handleWebUiSettings(out, request.body)
             path == "/api/refresh" && request.method == "POST" -> handleRefresh(out)
@@ -195,6 +208,35 @@ class WebUiHttpServer(
                 ),
             ),
         )
+    }
+
+    private fun handleHome(out: OutputStream) {
+        val status = runBlocking { kernelRepository.getStatus() }
+        val modules = runBlocking { moduleRepository.refreshInstalledModules(manual = false, checkUpdates = false) }
+        val superuser = runBlocking { superUserRepository.refresh() }
+        val selinux = runCatching {
+            when (java.io.File("/sys/fs/selinux/enforce").readText().trim()) {
+                "1" -> "Enforcing"
+                "0" -> "Permissive"
+                else -> "Unknown"
+            }
+        }.getOrDefault("Unknown")
+        val payload = mapOf(
+            "status" to status,
+            "version" to BuildConfig.VERSION_NAME,
+            "versionCode" to BuildConfig.VERSION_CODE,
+            "deviceModel" to android.os.Build.MODEL,
+            "deviceBrand" to android.os.Build.BRAND,
+            "androidVersion" to android.os.Build.VERSION.RELEASE,
+            "kernelRelease" to System.getProperty("os.version").orEmpty(),
+            "selinuxStatus" to selinux,
+            "seccompStatus" to -1,
+            "moduleCount" to moduleRepository.installedModules.value.modules.size,
+            "superuserCount" to superUserRepository.state.value.groups.size,
+            "modulesRefreshed" to modules.isSuccess,
+            "superuserRefreshed" to superuser.isSuccess,
+        )
+        writeJson(out, 200, gson.toJson(payload))
     }
 
     private fun webUiStateJson(): String = gson.toJson(
@@ -298,6 +340,44 @@ class WebUiHttpServer(
         fun v(key: String) = (map?.get(key) as? Number)?.toFloat() ?: 0f
         screenSource?.swipe(v("x1"), v("y1"), v("x2"), v("y2"))
         writeJson(out, 200, """{"ok":true}""")
+    }
+
+    private fun serveComposeApp(rawPath: String, out: OutputStream) {
+        val relative = rawPath.trimStart('/').ifEmpty { "index.html" }
+        if (relative.contains("..")) {
+            writeJson(out, 400, """{"error":"bad path"}""")
+            return
+        }
+        val bytes = runCatching {
+            context.assets.open("webui-cmp/$relative").use { it.readBytes() }
+        }.getOrNull()
+        if (bytes == null) {
+            if (!relative.substringAfterLast('/').contains('.')) {
+                serveComposeApp("index.html", out)
+            } else {
+                writeJson(out, 404, """{"error":"not found"}""")
+            }
+            return
+        }
+        val data = if (relative == "index.html") {
+            String(bytes, Charsets.UTF_8).replace("__TOKEN__", token).toByteArray(Charsets.UTF_8)
+        } else {
+            bytes
+        }
+        writeResponse(out, 200, composeAppMime(relative), data)
+    }
+
+    private fun composeAppMime(path: String): String = when (path.substringAfterLast('.', "")) {
+        "html" -> "text/html; charset=utf-8"
+        "js", "mjs" -> "text/javascript; charset=utf-8"
+        "css" -> "text/css; charset=utf-8"
+        "json" -> "application/json; charset=utf-8"
+        "wasm" -> "application/wasm"
+        "ttf" -> "font/ttf"
+        "woff2" -> "font/woff2"
+        "png" -> "image/png"
+        "svg" -> "image/svg+xml"
+        else -> "application/octet-stream"
     }
 
     private fun serveStatic(rawPath: String, out: OutputStream) {

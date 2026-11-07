@@ -129,6 +129,17 @@ private fun WebUiServerScreen() {
         ) { Text("在浏览器中打开") }
         OutlinedButton(
             modifier = Modifier.fillMaxWidth(),
+            enabled = boundPort > 0,
+            onClick = {
+                runCatching {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse("http://127.0.0.1:$boundPort/app/?token=$token")),
+                    )
+                }.onFailure { Toast.makeText(context, "没有可用浏览器", Toast.LENGTH_SHORT).show() }
+            },
+        ) { Text("打开 Compose WebUI") }
+        OutlinedButton(
+            modifier = Modifier.fillMaxWidth(),
             onClick = {
                 WebUiService.stop(context)
                 enabled = false
