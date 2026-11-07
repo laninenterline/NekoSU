@@ -12,7 +12,9 @@
 #include <linux/kprobes.h>
 #include <linux/kthread.h>
 #include <linux/sched.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/signal.h>
+#endif
 #include <linux/cred.h>
 #include <linux/fs.h>
 #include <linux/namei.h>
