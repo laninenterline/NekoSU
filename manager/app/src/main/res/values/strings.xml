@@ -718,4 +718,9 @@
     <string name="block_modules_save_failed">Save failed: make sure the manager has root access</string>
     <string name="settings_webui">WebUI（浏览器版）</string>
     <string name="settings_webui_summary">在本机 127.0.0.1 上启动 Web 服务，用浏览器访问管理器</string>
+    <string name="settings_webui_enabled">启用 WebUI 服务</string>
+    <string name="settings_webui_enabled_summary">在后台运行本地浏览器 UI（127.0.0.1）</string>
+    <string name="settings_webui_random_port">随机端口</string>
+    <string name="settings_webui_random_port_summary">关闭时使用固定端口 8787；开启后由系统分配空闲端口</string>
+    <string name="settings_webui_open">打开 WebUI 页面</string>
 </resources>

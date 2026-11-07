@@ -36,7 +36,8 @@ class WebUiService : Service(), KoinComponent {
             }
         }
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val port = prefs.getInt(KEY_PORT, DEFAULT_PORT)
+        val randomPort = prefs.getBoolean(KEY_RANDOM_PORT, false)
+        val port = if (randomPort) 0 else prefs.getInt(KEY_PORT, DEFAULT_PORT)
         val token = prefs.getString(KEY_TOKEN, null) ?: WebUiPrefs.ensureToken(this)
         if (server == null) {
             startForegroundNotification()
@@ -49,10 +50,15 @@ class WebUiService : Service(), KoinComponent {
                 superUserRepository = superUserRepository,
                 logCenterRepository = logCenterRepository,
                 onStopRequested = { stopServer() },
-            ).also {
-                runCatching { it.start() }
+            ).also { started ->
+                runCatching { started.start() }
+                    .onSuccess {
+                        WebUiPrefs.setBoundPort(this, started.boundPort)
+                        WebUiPrefs.setEnabled(this, true)
+                    }
                     .onFailure { error ->
                         server = null
+                        WebUiPrefs.setEnabled(this, false)
                         stopServer()
                         android.util.Log.e("NekoSU-WebUI", "server start failed", error)
                     }
@@ -84,6 +90,7 @@ class WebUiService : Service(), KoinComponent {
     private fun stopServer() {
         server?.stop()
         server = null
+        WebUiPrefs.setEnabled(this, false)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -99,6 +106,9 @@ class WebUiService : Service(), KoinComponent {
         const val PREFS = "webui_server"
         const val KEY_PORT = "port"
         const val KEY_TOKEN = "token"
+        const val KEY_ENABLED = "enabled"
+        const val KEY_RANDOM_PORT = "random_port"
+        const val KEY_BOUND_PORT = "bound_port"
         const val DEFAULT_PORT = 8787
         private const val CHANNEL = "neko_webui"
         private const val NOTIFICATION_ID = 0x4E45
@@ -137,5 +147,34 @@ object WebUiPrefs {
     fun setPort(context: Context, port: Int) {
         context.getSharedPreferences(WebUiService.PREFS, Context.MODE_PRIVATE)
             .edit().putInt(WebUiService.KEY_PORT, port).apply()
+    }
+
+    fun enabled(context: Context): Boolean =
+        context.getSharedPreferences(WebUiService.PREFS, Context.MODE_PRIVATE)
+            .getBoolean(WebUiService.KEY_ENABLED, false)
+
+    fun setEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(WebUiService.PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(WebUiService.KEY_ENABLED, enabled).apply()
+    }
+
+    fun randomPort(context: Context): Boolean =
+        context.getSharedPreferences(WebUiService.PREFS, Context.MODE_PRIVATE)
+            .getBoolean(WebUiService.KEY_RANDOM_PORT, false)
+
+    fun setRandomPort(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(WebUiService.PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(WebUiService.KEY_RANDOM_PORT, enabled).apply()
+    }
+
+    fun fixedPort(context: Context): Int = port(context)
+
+    fun boundPort(context: Context): Int =
+        context.getSharedPreferences(WebUiService.PREFS, Context.MODE_PRIVATE)
+            .getInt(WebUiService.KEY_BOUND_PORT, 0)
+
+    fun setBoundPort(context: Context, port: Int) {
+        context.getSharedPreferences(WebUiService.PREFS, Context.MODE_PRIVATE)
+            .edit().putInt(WebUiService.KEY_BOUND_PORT, port).apply()
     }
 }

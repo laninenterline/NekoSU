@@ -106,6 +106,8 @@ import com.nekosu.ui.component.settings.SettingsJumpPageWidget
 import com.nekosu.ui.component.settings.SettingsSwitchWidget
 import com.nekosu.ui.navigation.LocalNavigator
 import com.nekosu.ui.webui.WebUiServerActivity
+import com.nekosu.data.webui.WebUiPrefs
+import com.nekosu.data.webui.WebUiService
 import com.nekosu.ui.navigation.Route
 import com.nekosu.ui.theme.CardConfig
 import com.nekosu.ui.theme.ThemeConfig
@@ -654,6 +656,57 @@ fun SettingsPage(bottomPadding: Dp) {
 
             }
 
+            item {
+                SegmentedColumn(
+                    title = stringResource(R.string.settings_webui),
+                    content = {
+                        item {
+                            var webUiEnabled by remember { mutableStateOf(WebUiPrefs.enabled(context)) }
+                            SettingsSwitchWidget(
+                                icon = Icons.TwoTone.Adb,
+                                title = stringResource(R.string.settings_webui_enabled),
+                                description = stringResource(R.string.settings_webui_enabled_summary),
+                                checked = webUiEnabled,
+                                onCheckedChange = { value ->
+                                    webUiEnabled = value
+                                    WebUiPrefs.setEnabled(context, value)
+                                    if (value) WebUiService.start(context) else WebUiService.stop(context)
+                                },
+                            )
+                        }
+                        item {
+                            var webUiRandom by remember { mutableStateOf(WebUiPrefs.randomPort(context)) }
+                            SettingsSwitchWidget(
+                                icon = Icons.TwoTone.ElectricalServices,
+                                title = stringResource(R.string.settings_webui_random_port),
+                                description = stringResource(R.string.settings_webui_random_port_summary),
+                                checked = webUiRandom,
+                                onCheckedChange = { value ->
+                                    webUiRandom = value
+                                    WebUiPrefs.setRandomPort(context, value)
+                                    if (WebUiPrefs.enabled(context)) {
+                                        WebUiService.stop(context)
+                                        WebUiService.start(context)
+                                    }
+                                },
+                            )
+                        }
+                        item {
+                            SettingsJumpPageWidget(
+                                icon = Icons.TwoTone.Info,
+                                title = stringResource(R.string.settings_webui_open),
+                                description = stringResource(R.string.settings_webui_summary),
+                                onClick = {
+                                    context.startActivity(
+                                        Intent(context, WebUiServerActivity::class.java),
+                                    )
+                                },
+                            )
+                        }
+                    },
+                )
+            }
+
             // 关于卡片
             item {
                 SegmentedColumn(
@@ -665,18 +718,6 @@ fun SettingsPage(bottomPadding: Dp) {
                                 title = stringResource(R.string.about),
                                 onClick = {
                                     navigator.push(Route.About)
-                                },
-                            )
-                        }
-                        item {
-                            SettingsJumpPageWidget(
-                                icon = Icons.TwoTone.Adb,
-                                title = stringResource(R.string.settings_webui),
-                                description = stringResource(R.string.settings_webui_summary),
-                                onClick = {
-                                    context.startActivity(
-                                        Intent(context, WebUiServerActivity::class.java),
-                                    )
                                 },
                             )
                         }

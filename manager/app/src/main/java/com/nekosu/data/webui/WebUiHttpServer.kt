@@ -47,6 +47,8 @@ class WebUiHttpServer(
         acceptThread.start()
     }
 
+    val boundPort: Int get() = serverSocket?.localPort ?: port
+
     fun stop() {
         if (!running.compareAndSet(true, false)) return
         runCatching { serverSocket?.close() }
