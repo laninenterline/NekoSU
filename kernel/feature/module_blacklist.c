@@ -91,8 +91,8 @@ void __init ksu_module_blacklist_init(const char *modules)
     pr_info("module_blacklist: blocked modules: %s\n", blacklist);
 
 #ifdef CONFIG_KSU_TRACEPOINT_HOOK
-    ksu_syscall_table_hook(__NR_init_module, ksu_sys_init_module, &orig_sys_init_module);
-    ksu_syscall_table_hook(__NR_finit_module, ksu_sys_finit_module, &orig_sys_finit_module);
+    ksu_syscall_table_hook(__NR_init_module, (syscall_fn_t)ksu_sys_init_module, (syscall_fn_t *)&orig_sys_init_module);
+    ksu_syscall_table_hook(__NR_finit_module, (syscall_fn_t)ksu_sys_finit_module, (syscall_fn_t *)&orig_sys_finit_module);
     pr_info("module_blacklist: syscall hooked\n");
 #endif
 }

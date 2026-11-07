@@ -14,18 +14,27 @@ set -euo pipefail
 
 T=${1:?usage: $0 <kmi>  e.g. android15-6.6}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-CLANG_BIN=${CLANG_BIN:-/usr/lib/llvm-18/bin}
+if [ -z "${CLANG_BIN:-}" ]; then
+  if [ -x /usr/lib/llvm-18/bin/clang ]; then CLANG_BIN=/usr/lib/llvm-18/bin; else CLANG_BIN=$(dirname "$(command -v clang)"); fi
+fi
 export PATH="$CLANG_BIN:$PATH"
+LLVM_STRIP="$CLANG_BIN/llvm-strip"
+[ -x "$LLVM_STRIP" ] || LLVM_STRIP=$(command -v llvm-strip 2>/dev/null || command -v llvm-strip-18 2>/dev/null || command -v strip)
 DDK_WORK=${DDK_WORK:-/opt/ddk}
 LOGDIR=${KMI_LOGDIR:-${TMPDIR:-/tmp}/nekosu-kmi}
 mkdir -p "$LOGDIR"
 # Older kernels (< 5.10) do not understand make LLVM=1; use explicit tools.
+# KMI_MAKE_TC lets a caller override the toolchain (e.g. aarch64 cross gcc).
+if [ -n "${KMI_MAKE_TC:-}" ]; then
+  MAKE_TC="$KMI_MAKE_TC"
+else
 KV_MAJOR=$(sed -n 's/^VERSION = //p' "$SRC/Makefile" 2>/dev/null)
 KV_MINOR=$(sed -n 's/^PATCHLEVEL = //p' "$SRC/Makefile" 2>/dev/null)
 if [ -n "$KV_MAJOR" ] && { [ "$KV_MAJOR" -lt 5 ] || { [ "$KV_MAJOR" -eq 5 ] && [ "$KV_MINOR" -lt 10 ]; }; }; then
   MAKE_TC="CC=clang HOSTCC=gcc LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip"
 else
   MAKE_TC="LLVM=1 LLVM_IAS=1"
+fi
 fi
 
 PB=${DDK_PREBUILTS:-/root/ddk-prebuilts}
@@ -146,6 +155,9 @@ SYMVERS_BAK=$(mktemp "${TMPDIR:-/tmp}/nekosu-symvers.XXXXXX")
 cp -f "$KDIR/Module.symvers" "$SYMVERS_BAK"
 : > "$KDIR/Module.symvers"
 OUT="$ROOT/out/kmi-$T"; rm -rf "$OUT"; mkdir -p "$OUT"
+mkdir -p "$OUT/tools/code_generation/syscall_no" "$OUT/tools/code_generation/preinit_runner"
+( cd "$ROOT/kernel" && find . -type d ) | while IFS= read -r d; do mkdir -p "$OUT/$d"; done
+if [ "$KMAJ" -lt 5 ]; then cp -f "$ROOT/kernel/Makefile" "$OUT/Makefile"; fi
 KSU_ARGS=(CONFIG_KSU=m CONFIG_KSU_TRACEPOINT_HOOK=y CONFIG_KSU_MULTI_MANAGER_SUPPORT=y
           KSU_EXPECTED_SIZE="$SIZE" KSU_EXPECTED_HASH="$HASH"
           KBUILD_MODPOST_WARN=1)
@@ -172,7 +184,7 @@ for f in "$ROOT/kernel/kernelsu.ko" "$OUT/kernelsu.ko"; do
 done
 [ -n "$KO" ] || { echo "FAIL: kernelsu.ko not found"; exit 1; }
 echo "[$T] KSU: $(strings "$KO" | grep -m1 '^vermagic=')"
-"$CLANG_BIN/llvm-strip" -d "$KO"
+"$LLVM_STRIP" -d "$KO"
 mkdir -p "$ROOT/userspace/ksud/bin/aarch64"
 cp -f "$KO" "$ROOT/userspace/ksud/bin/aarch64/${T}_kernelsu.ko"
 # clean source-dir artifacts produced by new-style build
@@ -198,7 +210,7 @@ else
     [ -f "$f" ] && { SKO="$f"; break; }
   done
   echo "[$T] SUSFS: $(strings "$SKO" | grep -m1 '^vermagic=')"
-  "$CLANG_BIN/llvm-strip" -d "$SKO"
+  "$LLVM_STRIP" -d "$SKO"
   cp -f "$SKO" "$ROOT/userspace/ksud/bin/aarch64/${T}_susfs_guard_lkm.ko"
 fi
 

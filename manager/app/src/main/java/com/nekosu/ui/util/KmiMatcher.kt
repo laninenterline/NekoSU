@@ -7,6 +7,10 @@ import com.nekosu.KernelVersion
 data class KmiEntry(val kmi: String, val androidN: Int, val major: Int, val minor: Int)
 
 val embeddedKmis = listOf(
+    KmiEntry("android10-4.19", 10, 4, 19),
+    KmiEntry("android9-4.14", 9, 4, 14),
+    KmiEntry("android8-4.9", 8, 4, 9),
+    KmiEntry("android7-4.4", 7, 4, 4),
     KmiEntry("android11-5.4", 11, 5, 4),
     KmiEntry("android12-5.10", 12, 5, 10),
     KmiEntry("android13-5.10", 13, 5, 10),

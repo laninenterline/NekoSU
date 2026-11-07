@@ -8,7 +8,7 @@
 
 obj-m += susfs_guard_lkm.o
 
-susfs_guard_lkm-objs := susfs_main.o patch_memory.o symbol_resolver.o lsm_hook.o \
+susfs_guard_lkm-objs := susfs_main.o patch_memory.o symbol_resolver.o lsm_hook.o lsm_hook_old.o \
               susfs_uname.o susfs_kstat.o sus_map.o sus_path.o sus_mount.o \
               spoof_cmdline.o susfs_open_redirect.o susfs_enable_log.o \
               susfs_avc_spoof.o susfs_supercall.o susfs_hide_syms.o imports_guard.o \
@@ -32,7 +32,7 @@ KSU_SRCTREE_MISSING := $(if $(srctree),0,1)
 # casts symbol addresses (unsigned long) to function pointers.
 ccflags-y += -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat -Wno-missing-prototypes
 ccflags-y += -Wno-declaration-after-statement -Wno-unused-function
-ccflags-y += -include $(src)/susfs_kernel_compat.h
+ccflags-y += -include $(if $(M),$(M),$(src))/susfs_kernel_compat.h
 
 # fs/mount.h (struct mount + real_mount) is a private header; its includes are
 # all public, so -I$(srctree)/fs is enough to reach it via #include "mount.h".

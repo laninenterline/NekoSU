@@ -1,3 +1,11 @@
+/* 4.x has no BTF; provide stubs so BTF-dependent features are disabled. */
+#define SUSFS_NO_BTF 1
+#include <linux/version.h>
+#include "btf_layout.h"
+#include <linux/errno.h>
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
+
 /* SPDX-License-Identifier: GPL-2.0 */
 #include <linux/compiler.h>
 #include <linux/err.h>
@@ -374,3 +382,15 @@ int susfs_btf_callback_offset(const char *name, const char *member,
     *offset = actual;
     return 0;
 }
+
+#else /* < 5.4: no BTF */
+
+int susfs_btf_layout_init(void) { return -EOPNOTSUPP; }
+int susfs_btf_struct_size(const char *name, size_t *size) { return -EOPNOTSUPP; }
+int susfs_btf_field_offset(const char *name, const char *member, const char *type, size_t *offset) { return -EOPNOTSUPP; }
+int susfs_btf_member_offset(const char *name, const char *member, const char *type, size_t *offset) { return -EOPNOTSUPP; }
+int susfs_btf_enum_value(const char *name, const char *member, int *value) { return -EOPNOTSUPP; }
+int susfs_btf_check_function(const char *name, const char *result, const char *const *params, size_t count) { return -EOPNOTSUPP; }
+int susfs_btf_callback_offset(const char *name, const char *member, const char *result, const char *const *params, size_t count, size_t *offset) { return -EOPNOTSUPP; }
+
+#endif

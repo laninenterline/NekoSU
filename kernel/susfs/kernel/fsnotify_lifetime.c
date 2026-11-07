@@ -6,7 +6,11 @@
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/mutex.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/mm.h>
+#else
+#include <linux/sched.h>
+#endif
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/wait.h>

@@ -860,7 +860,9 @@ struct kstat_nr_entry {
 static struct kstat_nr_entry kstat_nr_table[] = {
 	{ __NR_newfstatat, "newfstatat", &cnt_nfstatat },
 	{ __NR_fstat,      "fstat",      &cnt_nfstat },
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0) /* statx */
 	{ __NR_statx,      "statx",      &cnt_statx },
+#endif /* statx */
 	{ COMPAT_FSTATAT64_NR, "fstatat64/compat", &cnt_fstatat64 },
 	{ COMPAT_STAT64_NR,    "stat64/compat",    &cnt_stat64 },
 	{ COMPAT_LSTAT64_NR,   "lstat64/compat",   &cnt_lstat64 },
@@ -871,7 +873,9 @@ static struct kstat_nr_entry kstat_nr_table[] = {
 	{ COMPAT_STAT_NR,      "stat/compat",      &cnt_compat_stat },
 	{ COMPAT_LSTAT_NR,     "lstat/compat",     &cnt_compat_stat },
 	{ COMPAT_FSTAT_NR,     "fstat/compat",     &cnt_compat_stat },
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0) /* statx */
 	{ COMPAT_STATX_NR,     "statx/compat",     &cnt_compat_statx },
+#endif /* statx */
 };
 
 /* compat (32-bit) statbuf: struct stat64 (see above) - the layout all four handled syscalls use. */
@@ -1175,6 +1179,7 @@ static bool susfs_kstat_spoof_compat_stat(struct kstat_call_state *st, unsigned 
 #define STATX_F_SIZE		STATX_SIZE
 #define STATX_F_BLOCKS		STATX_BLOCKS
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0) /* statx */
 struct susfs_statx_offs {
 	unsigned short dev, dev_minor, ino, nlink, size, blksize, blocks;
 	unsigned short atime_sec, atime_nsec, mtime_sec, mtime_nsec,
@@ -1375,6 +1380,7 @@ static bool susfs_kstat_spoof_statx(struct kstat_call_state *st, unsigned long s
 	atomic_inc(&st->cnt->rewrite);
 	return true;
 }
+#endif /* statx */
 
 /* The post-check, called at the TAIL of the table-entry wrapper (see kstat_hooks[] below) instead
  * of from a entry tail.  Two features ride it, exactly as before: the stat family below,
@@ -1535,6 +1541,7 @@ static __nocfi void susfs_kstat_post(long nr, bool compat, const unsigned long *
 		}
 		susfs_kstat_spoof_statbuf(&st, args[1]);
 		return;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0) /* statx */
 	case __NR_statx:
 	case COMPAT_STATX_NR:	/* 397 IS the native statx body: same buffer, same mask, 32-bit ptr */
 
@@ -1547,6 +1554,7 @@ static __nocfi void susfs_kstat_post(long nr, bool compat, const unsigned long *
 			st.compat ? (unsigned long)compat_ptr((u32)args[4]) : args[4],
 			(u32)args[3]);
 		return;
+#endif /* statx */
 	case COMPAT_FSTATAT64_NR:
 
 		/* The arguments come from the wrapper now - see the note above. */

@@ -1,7 +1,11 @@
 #include <linux/version.h>
 #include <linux/fs.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/task.h>
+#else
+#include <linux/sched.h>
+#endif
 #else
 #include <linux/sched.h>
 #endif

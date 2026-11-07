@@ -9,9 +9,17 @@
 #include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/version.h>
+
+#ifndef sizeof_field
+#define sizeof_field(TYPE, MEMBER) sizeof(((TYPE *)0)->MEMBER)
+#endif
 #include <linux/input.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/task.h>
+#else
+#include <linux/sched.h>
+#endif
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0)
 #include <linux/input-event-codes.h>

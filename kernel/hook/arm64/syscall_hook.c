@@ -20,6 +20,10 @@
 #include <asm/unistd.h>
 #endif
 
+#ifndef __nocfi
+#define __nocfi
+#endif
+
 syscall_fn_t *ksu_syscall_table = NULL;
 int ksu_dispatcher_nr = -1;
 #ifdef CONFIG_COMPAT

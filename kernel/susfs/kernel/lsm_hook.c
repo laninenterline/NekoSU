@@ -1,3 +1,11 @@
+/* 4.14/4.9/4.4: security_hook_list uses list_head, not hlist; LSM hook patching is
+ * disabled there for now (path hiding falls back to the other layers). */
+#include <linux/version.h>
+#include <linux/errno.h>
+#include "lsm_hook.h"
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
+
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * lsm_hook.c - runtime LSM hook installation (ported from KernelSU/SukiSU hook/lsm_hook.c).
@@ -1374,3 +1382,5 @@ void ksu_lsm_hook_exit(void)
     for (i = count - 1; i >= 0; i--)
         ksu_lsm_unhook(hooks[i]);
 }
+
+#endif /* >= 4.18 */

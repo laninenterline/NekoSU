@@ -6,3 +6,6 @@
 modules.order
 Module.symvers
 .tmp_versions/
+
+*.o.d
+.*.o.d

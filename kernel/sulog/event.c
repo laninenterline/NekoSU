@@ -11,7 +11,11 @@
 #endif
 #include <linux/sched.h> // signal in lower kernel in sched.h
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/signal.h>
+#else
+#include <linux/sched.h>
+#endif
 #endif
 #include <linux/slab.h>
 #include <linux/string.h>

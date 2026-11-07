@@ -1,3 +1,13 @@
+/* 4.9/4.4: fsnotify API differs too much; package observer is compiled out there. */
+#include <linux/version.h>
+#include <linux/module.h>
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 10, 0)
+#define SUSFS_OLD_FSNOTIFY_STUB 1
+int ksu_observer_init(void) { return 0; }
+void __exit ksu_observer_exit(void) { }
+#else
+
 // SPDX-License-Identifier: GPL-2.0
 #include <linux/module.h>
 #include <linux/fs.h>
@@ -75,6 +85,40 @@ static int ksu_handle_inode_event(struct fsnotify_mark *mark, u32 mask, struct i
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
 static const struct fsnotify_ops ksu_ops = {
     .handle_inode_event = ksu_handle_inode_event,
+};
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
+static int ksu_handle_event(struct fsnotify_group *group, struct inode *inode,
+                            struct fsnotify_mark *mark, struct fsnotify_mark *inode_mark,
+                            u32 mask, const void *data, int data_type,
+                            const unsigned char *file_name, u32 cookie,
+                            struct fsnotify_iter_info *iter_info)
+{
+    if (mask & FS_ISDIR)
+        return 0;
+    if (file_name && !strncmp((const char *)file_name, "packages.list", 13)) {
+        pr_info("packages.list detected: %d\n", mask);
+        ksu_defer_track_throne();
+    }
+    return 0;
+}
+static const struct fsnotify_ops ksu_ops = {
+    .handle_event = ksu_handle_event,
+};
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 20, 0)
+static int ksu_handle_event(struct fsnotify_group *group, struct inode *inode, u32 mask, const void *data,
+                            int data_type, const unsigned char *file_name, u32 cookie,
+                            struct fsnotify_iter_info *iter_info)
+{
+    if (mask & FS_ISDIR)
+        return 0;
+    if (file_name && !strncmp((const char *)file_name, "packages.list", 13)) {
+        pr_info("packages.list detected: %d\n", mask);
+        ksu_defer_track_throne();
+    }
+    return 0;
+}
+static const struct fsnotify_ops ksu_ops = {
+    .handle_event = ksu_handle_event,
 };
 #else
 static int ksu_handle_event(struct fsnotify_group *group, struct inode *inode, u32 mask, const void *data,
@@ -177,3 +221,5 @@ void __exit ksu_observer_exit(void)
     fsnotify_put_group(g);
     pr_info("%s: done.\n", __func__);
 }
+
+#endif /* < 4.10 */

@@ -1,0 +1,105 @@
+name: Build 4.x LKM
+
+on:
+  workflow_dispatch:
+    inputs:
+      kmi:
+        description: 'KMI to build (android10-4.19, android9-4.14, android8-4.9, android7-4.4)'
+        required: false
+        default: 'android10-4.19'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kmi: android10-4.19
+            branch: deprecated/android-4.19-gki-dev
+            defconfig: gki_defconfig
+          - kmi: android9-4.14
+            branch: deprecated/android-4.14
+            defconfig: defconfig
+          - kmi: android8-4.9
+            branch: deprecated/android-4.9
+            defconfig: defconfig
+          - kmi: android7-4.4
+            branch: deprecated/android-4.4
+            defconfig: defconfig
+    steps:
+      - uses: actions/checkout@v4
+      - name: Only build requested KMI
+        id: gate
+        run: |
+          if [ "${{ matrix.kmi }}" = "${{ inputs.kmi }}" ]; then echo "go=1" >> $GITHUB_OUTPUT; else echo "go=0" >> $GITHUB_OUTPUT; fi
+
+      - name: Install tools
+        if: steps.gate.outputs.go == '1'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang lld llvm flex bison gcc make git gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+
+      - name: Clone kernel source
+        if: steps.gate.outputs.go == '1'
+        run: |
+          for i in 1 2 3; do
+            rm -rf "$RUNNER_TEMP/ksrc"
+            git clone --depth 1 -b "${{ matrix.branch }}" https://android.googlesource.com/kernel/common "$RUNNER_TEMP/ksrc" && break
+            sleep 10
+          done
+          test -f "$RUNNER_TEMP/ksrc/Makefile"
+          echo "KSRC=$RUNNER_TEMP/ksrc" >> $GITHUB_ENV
+
+      - name: Prepare old kernel build
+        if: steps.gate.outputs.go == '1'
+        run: |
+          SRC="$KSRC"
+          # genheaders needs kernel classmap but host capability headers are newer
+          sed -i '/^#if CAP_LAST_CAP/,/^#endif/d' "$SRC/security/selinux/include/classmap.h"
+          CROSS_COMPILE=aarch64-linux-gnu-
+          MAKE_TC="ARCH=arm64 CROSS_COMPILE=$CROSS_COMPILE HOSTCC=gcc HOSTCFLAGS=-fcommon"
+          make -C "$SRC" $MAKE_TC "${{ matrix.defconfig }}"
+          # old defconfigs may not set the SELinux sidtab hash bits used by headers
+          printf '%s\n' 'CONFIG_SECURITY=y' 'CONFIG_SECURITY_SELINUX=y' 'CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS=8' 'CONFIG_SECCOMP=y' 'CONFIG_SECCOMP_FILTER=y' '# CONFIG_WERROR is not set' >> "$SRC/.config"
+          make -C "$SRC" $MAKE_TC olddefconfig >/dev/null 2>&1 || true
+          # gcc >= 13 reserves 'constexpr'; old host unifdef uses it as an identifier
+          sed -i 's/\bconstexpr\b/const_expr/g' "$SRC/scripts/unifdef.c" 2>/dev/null || true
+          : > "$SRC/Module.symvers"
+          # 4.19 host dtc: allow the duplicate yylloc symbol with modern GCC
+          printf '\nHOSTCFLAGS_dtc-lexer.o := -fcommon\nHOSTCFLAGS_dtc-parser.o := -fcommon\n' >> "$SRC/scripts/dtc/Makefile"
+          make -C "$SRC" $MAKE_TC scripts
+          gcc -I"$SRC/security/selinux/include" -o "$RUNNER_TEMP/genheaders" "$SRC/scripts/selinux/genheaders/genheaders.c"
+          "$RUNNER_TEMP/genheaders" "$SRC/security/selinux/flask.h" "$SRC/security/selinux/av_permissions.h"
+          echo "KMI=${{ matrix.kmi }}" >> $GITHUB_ENV
+
+      - name: Build LKM
+        if: steps.gate.outputs.go == '1'
+        env:
+          KSU_EXPECTED_SIZE: '318'
+          KSU_EXPECTED_HASH: 'e6b6840253ef5c04252ccd3a0e7b3d832dbe59730b8f1d895b5d3e89ac9d84d0'
+        run: |
+          set +e
+          SKIP_PREBUILT_FETCH=1 KDIR="$KSRC" SRC="$KSRC" KMI_LOGDIR="$RUNNER_TEMP/kmi-logs" \
+            SUSFS_SRC="$GITHUB_WORKSPACE/kernel/susfs" \
+            KMI_MAKE_TC="CC=aarch64-linux-gnu-gcc HOSTCC=gcc HOSTCFLAGS=-fcommon KCFLAGS=-DCONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS=8 LD=aarch64-linux-gnu-ld AR=aarch64-linux-gnu-ar NM=aarch64-linux-gnu-nm OBJCOPY=aarch64-linux-gnu-objcopy OBJDUMP=aarch64-linux-gnu-objdump STRIP=aarch64-linux-gnu-strip" \
+            timeout 1800 bash scripts/build_kmi.sh "${{ matrix.kmi }}" > "$RUNNER_TEMP/build.log" 2>&1
+          rc=$?
+          echo "build_rc=$rc" >> $GITHUB_ENV
+          tail -40 "$RUNNER_TEMP/build.log"
+          if [ "$rc" != "0" ]; then echo "build failed"; exit 1; fi
+
+      - name: Upload artifacts and logs
+        if: always() && steps.gate.outputs.go == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkm-${{ matrix.kmi }}
+          path: |
+            userspace/ksud/bin/aarch64/${{ matrix.kmi }}_kernelsu.ko
+            userspace/ksud/bin/aarch64/${{ matrix.kmi }}_susfs_guard_lkm.ko
+            ${{ runner.temp }}/build.log
+            ${{ runner.temp }}/kmi-logs/*
+          if-no-files-found: warn

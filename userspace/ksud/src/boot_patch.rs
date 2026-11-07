@@ -104,6 +104,14 @@ mod android {
                 // release string. There is exactly one embedded 5.4 variant.
                 if version.contains("5.4.") {
                     Ok("android11-5.4".to_string())
+                } else if version.contains("4.19.") {
+                    Ok("android10-4.19".to_string())
+                } else if version.contains("4.14.") {
+                    Ok("android9-4.14".to_string())
+                } else if version.contains("4.9.") {
+                    Ok("android8-4.9".to_string())
+                } else if version.contains("4.4.") {
+                    Ok("android7-4.4".to_string())
                 } else {
                     Err(e)
                 }

@@ -3,3 +3,11 @@
 **/mkbootfs
 **/ksuinit
 !aarch64/android11-5.4_kernelsu.ko
+!aarch64/android10-4.19_kernelsu.ko
+!aarch64/android10-4.19_susfs_guard_lkm.ko
+!aarch64/android9-4.14_kernelsu.ko
+!aarch64/android9-4.14_susfs_guard_lkm.ko
+!aarch64/android8-4.9_kernelsu.ko
+!aarch64/android8-4.9_susfs_guard_lkm.ko
+!aarch64/android7-4.4_kernelsu.ko
+!aarch64/android7-4.4_susfs_guard_lkm.ko

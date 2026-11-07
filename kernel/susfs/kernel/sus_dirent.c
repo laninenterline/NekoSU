@@ -35,7 +35,11 @@
 #include <linux/file.h>
 #include <linux/mutex.h>
 #include <linux/uaccess.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/signal.h>
+#else
+#include <linux/sched.h>
+#endif
 #include <linux/string.h>
 #include <linux/limits.h>	/* NAME_MAX/PATH_MAX: the name a filldir callback hands over */
 #include <asm/ptrace.h>
@@ -212,7 +216,7 @@ __nocfi bool susfs_dirent_prefilter(const struct pt_regs *regs, long *out,
 		return false;
 
 	atomic_inc(&n_sd_calls);
-	buf.ctx.actor = sd_filldir;
+	*(filldir_t *)&buf.ctx.actor = sd_filldir; /* 4.14 has a const actor */
 	buf.ctx.pos = 0;
 	buf.current_dir = (void __user *)regs->regs[1];
 	buf.count = (int)count;

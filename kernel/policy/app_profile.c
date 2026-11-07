@@ -9,7 +9,11 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 // https://github.com/torvalds/linux/commit/8703e8a465b1e9cadc3680b4b1248f5987e54518
 #include <linux/sched/user.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #include <linux/sched/task.h>
+#else
+#include <linux/sched.h>
+#endif
 #endif
 #include <linux/sched.h>
 #include <linux/seccomp.h>
