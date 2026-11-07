@@ -40,6 +40,10 @@
 #define CMD_SUSFS_IS_SUS_SU_READY               0x555f0 /* deprecated */
 #define CMD_SUSFS_SUS_SU                        0x60000 /* deprecated */
 #define CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING       0x60010
+/* 0x60030: official v2.3.0 getpriority uid filter. Reserved in the LKM ABI;
+ * the kernel-side handler is not implemented yet (see docs/reference/susfs-official-diff.md). */
+#define CMD_SUSFS_SET_PRIORITY_UID_FILTER 0x60030
+
 #define CMD_SUSFS_ADD_SUS_MAP                   0x60020
 
 /* 126 is a USERSPACE-side sentinel the kernel never produces: the ksu_susfs C tool pre-seeds payload.err with it and
@@ -52,6 +56,14 @@
  * The kernel half of the contract is only "do not write err for a command you do not handle"; susfs_supercall.c mirrors
  * it (the kprobe does not hijack a command susfs_cmd_handled() rejects and writes nothing).  Userspace defines it only. */
 #define ERR_CMD_NOT_SUPPORTED 126
+
+
+/* getpriority uid filter request (official compatible payload). */
+#define SUSFS_APP_STR_BUF_SIZE 65535
+struct st_susfs_priority_uid_filter {
+    char app_strings[SUSFS_APP_STR_BUF_SIZE];
+    int err;
+};
 
 #define SUSFS_MAX_LEN_PATHNAME                  256
 #define SUSFS_FAKE_CMDLINE_OR_BOOTCONFIG_SIZE   8192
