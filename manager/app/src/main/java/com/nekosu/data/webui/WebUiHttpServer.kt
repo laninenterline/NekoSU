@@ -140,6 +140,14 @@ class WebUiHttpServer(
             serveComposeApp(path.removePrefix("/app").ifEmpty { "/" }, out, request.headers["accept-encoding"])
             return
         }
+        if (path == "/" || path == "/index.html") {
+            // Only one WebUI: always serve the shared Compose Multiplatform UI at /app/.
+            val target = "/app/?token=" + java.net.URLEncoder.encode(token, "UTF-8")
+            val header = "HTTP/1.1 302 Found\r\nLocation: $target\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+            out.write(header.toByteArray(Charsets.ISO_8859_1))
+            out.flush()
+            return
+        }
         if (!path.startsWith("/api/")) {
             serveStatic(path, out)
             return
