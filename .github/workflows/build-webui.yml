@@ -1,0 +1,36 @@
+name: Build WebUI (wasm)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'webui-cmp/**'
+      - 'ui-shared/**'
+      - '.github/workflows/build-webui.yml'
+
+jobs:
+  build-webui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build Compose WebUI (wasm)
+        run: |
+          cd webui-cmp
+          chmod +x gradlew
+          ./gradlew :composeApp:wasmJsBrowserDistribution --no-daemon --console=plain
+
+      - name: Upload wasm distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: webui-wasm
+          path: webui-cmp/composeApp/build/dist/wasmJs/productionExecutable
+          if-no-files-found: error
