@@ -91,6 +91,9 @@ import kotlinx.coroutines.withContext
 import com.nekosu.BuildConfig
 import com.nekosu.Natives.KernelPatchImplementation
 import com.nekosu.R
+import com.nekosu.shared.SharedHomeModel
+import com.nekosu.shared.SharedHomeSections
+import com.nekosu.shared.SharedStatusCard
 import com.nekosu.domain.model.HomeSystemInfo
 import com.nekosu.domain.model.KernelStatus
 import com.nekosu.domain.model.ManagerUpdateChannel
@@ -179,6 +182,38 @@ fun HomePage(
     val navigator = LocalNavigator.current
     val loadingDialog = rememberLoadingDialog()
     val scope = rememberCoroutineScope()
+
+    val sharedHomeModel = SharedHomeModel(
+        working = uiState.systemStatus.isRootAvailable,
+        lkmMode = uiState.systemStatus.lkmMode == true,
+        lateLoad = uiState.systemStatus.isLateLoadMode,
+        superuserCount = uiState.systemInfo.superuserCount,
+        moduleCount = uiState.systemInfo.moduleCount,
+        device = uiState.systemInfo.deviceModel,
+        kernelRelease = uiState.systemInfo.kernelRelease,
+        androidVersion = uiState.systemInfo.androidVersion,
+        kernelDriverVersion = uiState.systemStatus.ksuFullVersion ?: "—",
+        managerVersion = uiState.systemInfo.managerVersion.let { "${it.first} (${it.second}/${it.third})" },
+        susfsVersion = uiState.systemInfo.susfsVersion.ifBlank { "—" },
+        selinux = uiState.systemInfo.selinuxStatus,
+        seccomp = when (uiState.systemInfo.seccompStatus) {
+            2 -> "过滤模式"
+            1 -> "严格模式"
+            0 -> "已禁用"
+            else -> "不支持"
+        },
+        kmi = run {
+            val v = uiState.systemStatus.kernelVersion
+            val key = "${v.major}.${v.patchLevel}"
+            mapOf(
+                "4.19" to "android10-4.19", "4.14" to "android9-4.14", "4.9" to "android8-4.9", "4.4" to "android7-4.4",
+                "5.4" to "android11-5.4", "5.10" to "android12-5.10", "5.15" to "android13-5.15",
+                "6.1" to "android14-6.1", "6.6" to "android15-6.6", "6.12" to "android16-6.12", "6.18" to "android17-6.18",
+            )[key] ?: "${key}.x"
+        },
+        hook = uiState.systemStatus.hookType.ifBlank { "—" },
+        canJailbreak = !uiState.systemStatus.isRootAvailable && uiState.systemStatus.isSELinuxPermissive,
+    )
 
     Scaffold(
         topBar = {
@@ -315,14 +350,18 @@ fun HomePage(
                     Spacer(modifier = Modifier.height(10.dp))
                 }
 
-                StatusCard(
-                    uiState = uiState,
-                    onClickJailbreak = {
-                        if (MagicaCompat.wasRebootedAfterAttempt(context)) {
-                            showMagicaBlocked = true
-                        } else {
-                            showMagicaConfirm = true
+                SharedStatusCard(
+                    model = sharedHomeModel,
+                    onJailbreak = if (sharedHomeModel.canJailbreak) {
+                        {
+                            if (MagicaCompat.wasRebootedAfterAttempt(context)) {
+                                showMagicaBlocked = true
+                            } else {
+                                showMagicaConfirm = true
+                            }
                         }
+                    } else {
+                        null
                     },
                 )
             }
@@ -406,12 +445,7 @@ fun HomePage(
             }
 
             if (uiState.isExtendedDataLoaded) {
-                InfoCard(
-                    systemStatus = uiState.systemStatus,
-                    systemInfo = uiState.systemInfo,
-                    isSimpleMode = uiState.isSimpleMode,
-                    showHomeCardIcons = uiState.showHomeCardIcons,
-                )
+                SharedHomeSections(sharedHomeModel)
             }
 
             // 链接卡片

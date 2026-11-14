@@ -21,6 +21,7 @@ import androidx.compose.material.icons.twotone.Security
 import androidx.compose.material.icons.twotone.Smartphone
 import androidx.compose.material.icons.twotone.Tag
 import androidx.compose.material.icons.twotone.TaskAlt
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +50,7 @@ data class SharedHomeModel(
     val seccomp: String,
     val kmi: String,
     val hook: String,
+    val canJailbreak: Boolean = false,
 )
 
 @Composable
@@ -64,8 +66,16 @@ fun SharedHomeContent(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Spacer(Modifier.height(6.dp))
-        StatusCard(model)
+        SharedStatusCard(model)
         Spacer(Modifier.height(2.dp))
+        SharedHomeSections(model)
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun SharedHomeSections(model: SharedHomeModel) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SharedSection("版本信息") {
             SharedInfoRow(Icons.TwoTone.Smartphone, "设备", model.device)
             SharedInfoRow(Icons.TwoTone.DeveloperBoard, "内核版本", model.kernelRelease)
@@ -81,12 +91,11 @@ fun SharedHomeContent(
             SharedInfoRow(Icons.TwoTone.Tag, "Hook 类型", model.hook)
             SharedInfoRow(Icons.TwoTone.Tag, "Late-load", if (model.lateLoad) "是" else "否")
         }
-        Spacer(Modifier.height(16.dp))
     }
 }
 
 @Composable
-private fun StatusCard(model: SharedHomeModel) {
+fun SharedStatusCard(model: SharedHomeModel, onJailbreak: (() -> Unit)? = null) {
     Surface(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.primaryContainer,
@@ -106,7 +115,7 @@ private fun StatusCard(model: SharedHomeModel) {
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        if (model.working) "工作中" else "未安装",
+                        if (model.working) "工作中" else "未获取临时 root",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
@@ -119,10 +128,18 @@ private fun StatusCard(model: SharedHomeModel) {
                 }
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    "${model.superuserCount} 个超级用户, ${model.moduleCount} 个模块",
+                    if (model.working) {
+                        "${model.superuserCount} 个超级用户, ${model.moduleCount} 个模块"
+                    } else {
+                        "请先通过越狱入口（Magica）或手动 ksud late-load 获取临时 root。"
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                 )
+            }
+            if (!model.working && onJailbreak != null) {
+                Spacer(Modifier.width(8.dp))
+                Button(onClick = onJailbreak) { Text("越狱") }
             }
         }
     }

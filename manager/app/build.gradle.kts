@@ -43,7 +43,7 @@ android {
     namespace = "com.nekosu"
 
     sourceSets.getByName("main") {
-        java.srcDir("../../ui-shared/src/commonMain/kotlin")
+        kotlin.srcDir("../../ui-shared/src/commonMain/kotlin")
     }
 
     buildTypes {
