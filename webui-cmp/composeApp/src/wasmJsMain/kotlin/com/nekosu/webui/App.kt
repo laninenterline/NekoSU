@@ -1061,10 +1061,31 @@ private fun KmiScreen(onBack: () -> Unit) {
     val kernel = status.kernelVersion
     val kernelText = kernel?.let { "${it.major}.${it.patchLevel}.${it.subLevel}" } ?: "—"
     val modeText = when (status.lkmMode) {
-        true -> "LKM（可加载内核模块）"
-        false -> "Built-in（内置）"
+        true -> "LKM"
+        false -> "Built-in"
         null -> "未知"
     }
+    val advice = buildList {
+        if (!status.isRootAvailable) add("Root 不可用：请先通过越狱入口获取临时 root")
+        if (kernel == null) add("无法读取内核版本")
+        if (status.isRootAvailable && home.susfsVersion.isBlank()) add("SuSFS 未启用")
+        if (advice.isEmpty()) add("状态正常")
+    }
+    val model = com.nekosu.shared.SharedKmiModel(
+        device = home.deviceModel,
+        android = home.androidVersion,
+        kernelRelease = home.kernelRelease,
+        kernelVersion = kernelText,
+        kmi = formatKmi(kernel),
+        kmiMatched = kernel != null,
+        rootAvailable = status.isRootAvailable,
+        lkmMode = modeText,
+        lateLoad = status.isLateLoadMode,
+        ksuVersion = status.ksuFullVersion ?: "—",
+        susfsText = home.susfsVersion.ifBlank { "未启用" },
+        hook = status.hookType.ifBlank { "—" },
+        advice = advice,
+    )
     Scaffold(
         topBar = {
             TopAppBar(
@@ -1078,37 +1099,13 @@ private fun KmiScreen(onBack: () -> Unit) {
             )
         },
     ) { padding ->
-        Column(
-            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Spacer(Modifier.height(4.dp))
-            if (!status.isRootAvailable) {
-                WarningCard("Root 不可用：加载状态可能不准确", Icons.TwoTone.Warning)
-            }
-            SegmentedSection("内核信息") {
-                InfoRow(Icons.TwoTone.Memory, "内核版本", kernelText)
-                InfoRow(Icons.TwoTone.DeveloperBoard, "内核 release", home.kernelRelease)
-                InfoRow(Icons.TwoTone.Tag, "KMI 推断", formatKmi(kernel))
-                InfoRow(Icons.TwoTone.Android, "Android 版本", home.androidVersion)
-            }
-            SegmentedSection("加载状态") {
-                InfoRow(Icons.TwoTone.TaskAlt, "Root 状态", if (status.isRootAvailable) "可用" else "不可用")
-                InfoRow(Icons.TwoTone.ElectricalServices, "加载模式", modeText)
-                InfoRow(Icons.TwoTone.Science, "加载方式", if (status.isLateLoadMode) "越狱 / late-load" else "开机加载")
-                InfoRow(Icons.TwoTone.Policy, "Hook 类型", status.hookType.ifBlank { "—" })
-            }
-            SegmentedSection("内核模块") {
-                InfoRow(Icons.TwoTone.Tag, "KSU 版本", status.ksuFullVersion ?: "—")
-                InfoRow(Icons.TwoTone.Security, "SELinux", home.selinuxStatus)
-                InfoRow(Icons.TwoTone.FilterList, "Seccomp", seccompText(home.seccompStatus))
-            }
+        Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 8.dp)) {
+            Spacer(Modifier.height(8.dp))
+            com.nekosu.shared.SharedKmiContent(model)
             Spacer(Modifier.height(16.dp))
         }
     }
 }
-
-/* ============================== 关于 ============================== */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
