@@ -142,50 +142,30 @@ fun LogCenterScreen() {
         val lines = state.content.lines()
         val filtered = if (query.isBlank()) lines else lines.filter { it.contains(query, ignoreCase = true) }
         val filters = logSourceFilters()
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                top = innerPadding.calculateTopPadding() + 8.dp,
-                bottom = innerPadding.calculateBottomPadding() + 16.dp,
-                start = 16.dp,
-                end = 16.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize(),
         ) {
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    filters.forEach { (source, label) ->
-                        FilterChip(
-                            selected = state.source == source,
-                            onClick = { viewModel.select(source) },
-                            label = { Text(label) },
-                        )
-                    }
-                }
-            }
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = if (state.isLoading) {
-                            stringResource(R.string.log_center_loading)
-                        } else {
-                            stringResource(R.string.log_center_refresh)
-                        },
-                        modifier = Modifier.padding(8.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.TwoTone.Refresh, contentDescription = stringResource(R.string.log_center_refresh))
-                    }
+            com.nekosu.shared.SharedLogContent(
+                model = com.nekosu.shared.SharedLogModel(
+                    sources = filters.map { it.first.name to it.second },
+                    selectedSource = state.source.name,
+                    query = query,
+                    text = if (query.isBlank()) {
+                        state.content
+                    } else {
+                        state.content.lines().filter { it.contains(query, ignoreCase = true) }.joinToString("\n")
+                    },
+                    loading = state.isLoading,
+                ),
+                onSelectSource = { name ->
+                    runCatching { LogSource.valueOf(name) }.getOrNull()?.let { viewModel.select(it) }
+                },
+                onQueryChange = { query = it },
+                onRefresh = { viewModel.refresh() },
+                onExport = { exportLauncher.launch("NekoSU_logs.txt") },
+                actions = {
                     IconButton(onClick = {
                         viewModel.clear { ok ->
                             scope.launch {
@@ -230,25 +210,10 @@ fun LogCenterScreen() {
                     }) {
                         Icon(Icons.TwoTone.Share, contentDescription = shareBugreportTitle)
                     }
-                    IconButton(onClick = { exportLauncher.launch("NekoSU_logs.txt") }) {
-                        Icon(Icons.TwoTone.Save, contentDescription = stringResource(R.string.log_center_export))
-                    }
-                }
-            }
-            item {
-                OutlinedCard(modifier = Modifier.fillMaxWidth()) {
-                    SelectionContainer {
-                        Text(
-                            text = filtered.joinToString("\n").ifBlank { emptyMsg },
-                            modifier = Modifier.padding(12.dp),
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 12.sp,
-                        )
-                    }
-                }
-            }
+                },
+            )
         }
-    }
+
 }
 
 @Composable

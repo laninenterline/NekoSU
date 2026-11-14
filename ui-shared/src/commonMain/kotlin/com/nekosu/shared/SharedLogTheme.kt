@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -51,6 +53,7 @@ fun SharedLogContent(
     onQueryChange: (String) -> Unit,
     onRefresh: (() -> Unit)? = null,
     onExport: (() -> Unit)? = null,
+    actions: (@Composable RowScope.() -> Unit)? = null,
 ) {
     Column(Modifier.fillMaxSize().padding(horizontal = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
@@ -81,7 +84,7 @@ fun SharedLogContent(
         Surface(
             shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
-            modifier = Modifier.fillMaxWidth().weight(1f),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 240.dp, max = 520.dp),
         ) {
             Text(
                 model.text.ifEmpty { "（无日志）" },
@@ -98,6 +101,7 @@ fun SharedLogContent(
             if (onExport != null) {
                 androidx.compose.material3.OutlinedButton(onClick = onExport) { Text("导出") }
             }
+            actions?.invoke(this)
             Spacer(Modifier.height(8.dp))
         }
         Spacer(Modifier.height(8.dp))
