@@ -1277,125 +1277,34 @@ fun ModuleItem(
                 .padding(horizontal = 16.dp)
                 .padding(top = 12.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val moduleVersion = stringResource(id = R.string.module_version)
-                val moduleAuthor = stringResource(id = R.string.module_author)
-
-                Column(
-                    modifier = Modifier.fillMaxWidth(0.8f),
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = module.name,
-                            fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                            fontWeight = FontWeight.SemiBold,
-                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                            fontFamily = MaterialTheme.typography.titleMedium.fontFamily,
-                            textDecoration = textDecoration,
-                            modifier = Modifier.weight(1f, false),
-                        )
-                    }
-
-                    Text(
-                        text = "$moduleVersion: ${module.version}",
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                        textDecoration = textDecoration,
-                    )
-
-                    Text(
-                        text = "$moduleAuthor: ${module.author}",
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                        fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                        textDecoration = textDecoration,
-                    )
-
-                    // 显示更多模块信息时添加updateJson
-                    if (showMoreModuleInfo && module.updateJson.isNotEmpty()) {
-                        val updateJsonLabel = stringResource(R.string.module_update_json)
-                        Text(
-                            text = "$updateJsonLabel: ${module.updateJson}",
-                            fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                            fontFamily = MaterialTheme.typography.bodySmall.fontFamily,
-                            textDecoration = textDecoration,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 5,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .combinedClickable(
-                                    onClick = { },
-                                    onLongClick = {
-                                        val clipData = ClipData.newPlainText(
-                                            "Update JSON URL",
-                                            module.updateJson,
-                                        )
-                                        clipboardManager.setPrimaryClip(clipData)
-                                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.module_update_json_copied),
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
-                                    },
-                                ),
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    Switch(
-                        enabled = !module.update && !isChangingEnabled,
-                        checked = isEnabled,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                isChangingEnabled = true
-                                try {
-                                    if (onCheckChanged(enabled)) {
-                                        isEnabled = enabled
-                                    }
-                                } finally {
-                                    isChangingEnabled = false
-                                }
+            com.nekosu.shared.SharedModuleHeader(
+                model = com.nekosu.shared.SharedModuleModel(
+                    id = module.dirId,
+                    name = module.name,
+                    version = module.version,
+                    author = module.author,
+                    description = module.description,
+                    enabled = isEnabled,
+                    update = module.update,
+                    remove = module.remove,
+                    metamodule = module.metamodule,
+                    hasWebUi = module.hasWebUi,
+                ),
+                checked = isEnabled,
+                enabled = !module.update && !isChangingEnabled,
+                onCheckedChange = { enabled ->
+                    scope.launch {
+                        isChangingEnabled = true
+                        try {
+                            if (onCheckChanged(enabled)) {
+                                isEnabled = enabled
                             }
-                        },
-                        interactionSource = if (!module.hasWebUi) interactionSource else null,
-                        thumbContent = {
-                            if (isEnabled) {
-                                Icon(
-                                    imageVector = Icons.TwoTone.Check,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.TwoTone.Close,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.surfaceBright,
-                                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                                )
-                            }
-                        },
-                    )
-                }
-            }
+                        } finally {
+                            isChangingEnabled = false
+                        }
+                    }
+                },
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 

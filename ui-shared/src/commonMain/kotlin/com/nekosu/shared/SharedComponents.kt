@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 
 /** 超级用户应用组（与 App SuperUserPage 的 AppGroupItem 对齐）。 */
@@ -214,5 +215,47 @@ fun SharedModuleCard(
                 }
             }
         }
+    }
+}
+
+/** 模块卡片头部：名称 / Version / Author + 启用开关（Android 与 Web 共用）。 */
+@Composable
+fun SharedModuleHeader(
+    model: SharedModuleModel,
+    checked: Boolean,
+    enabled: Boolean = true,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                model.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                textDecoration = if (model.remove) TextDecoration.LineThrough else null,
+            )
+            Text(
+                "Version: ${model.version}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textDecoration = if (model.remove) TextDecoration.LineThrough else null,
+            )
+            Text(
+                "Author: ${model.author}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textDecoration = if (model.remove) TextDecoration.LineThrough else null,
+            )
+        }
+        Switch(
+            checked = checked,
+            enabled = enabled,
+            onCheckedChange = onCheckedChange,
+            thumbContent = null,
+        )
     }
 }
