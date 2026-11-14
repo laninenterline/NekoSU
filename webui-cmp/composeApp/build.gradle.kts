@@ -17,7 +17,7 @@ kotlin {
     }
     sourceSets {
         commonMain {
-            kotlin.srcDir("../../NekoSU/ui-shared/src/commonMain/kotlin")
+            kotlin.srcDir(rootProject.file("../ui-shared/src/commonMain/kotlin"))
         }
         commonMain.dependencies {
             implementation(compose.runtime)
