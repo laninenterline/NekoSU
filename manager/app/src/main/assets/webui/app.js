@@ -42,6 +42,7 @@
   function navigate(page) {
     current = page;
     document.querySelectorAll('[data-page]').forEach((el) => el.classList.toggle('active', el.dataset.page === page));
+    document.querySelectorAll('.page').forEach((el) => el.classList.toggle('active', el.id === 'page-' + page));
     $('#title').textContent = titles[page] || page;
     const load = {
       home: loadHome, modules: loadModules, superuser: loadSuperUser, logs: loadLogs, settings: loadSettings,
@@ -72,7 +73,7 @@
     $('#st-kernel').textContent = k.kernelVersion ? `${k.kernelVersion.major}.${k.kernelVersion.patchLevel}.${k.kernelVersion.subLevel}` : '—';
     $('#st-late').textContent = k.isLateLoadMode ? '是' : '否';
     $('#st-hook').textContent = k.hookType || '—';
-    $('#st-version').textContent = 'v' + (data.version || '?') + ' (' + (data.versionCode || '?') + ')';
+    $('#st-version').textContent = String(data.version || '?').replace(/^v/i, 'v') + ' (' + (data.versionCode || '?') + ')';
     $('#home-detail').textContent = JSON.stringify(k, null, 2);
     setConn(true);
   }
@@ -158,7 +159,7 @@
     $('#set-random').checked = !!data.randomPort;
     $('#set-url').textContent = data.boundPort > 0 ? `http://127.0.0.1:${data.boundPort}/` : '（未运行）';
     $('#set-token').textContent = token;
-    $('#about-version').textContent = `v${data.version || '?'} (${data.versionCode || '?'})`;
+    $('#about-version').textContent = `${String(data.version || '?').replace(/^v/i, 'v')} (${data.versionCode || '?'})`;
     setConn(true);
   }
 

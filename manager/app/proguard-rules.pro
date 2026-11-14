@@ -45,3 +45,12 @@
 -keep interface com.yalantis.ucrop** { *; }
 
 -keep interface com.nekosu.rootService.** { *; }
+
+
+# WebUI JSON: Gson serializes domain models reflectively; R8 must not rename their fields.
+-keep class com.nekosu.domain.model.** { *; }
+-keep class com.nekosu.domain.model.*$* { *; }
+-keepclassmembers class ** {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+-keepclassmembers enum com.nekosu.domain.model.** { *; }
