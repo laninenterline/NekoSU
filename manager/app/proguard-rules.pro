@@ -49,6 +49,8 @@
 
 # WebUI JSON: Gson serializes domain models reflectively; R8 must not rename their fields.
 -keep class com.nekosu.domain.model.** { *; }
+-keep class com.nekosu.KernelVersion { *; }
+-keep class com.nekosu.KernelsKt { *; }
 -keep class com.nekosu.domain.model.*$* { *; }
 -keepclassmembers class ** {
     @com.google.gson.annotations.SerializedName <fields>;

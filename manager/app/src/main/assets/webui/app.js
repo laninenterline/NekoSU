@@ -60,21 +60,49 @@
     return map[`${v.major}.${v.patchLevel}`] || `${v.major}.${v.patchLevel}.x`;
   }
 
+  function seccompText(v) {
+    if (v === 2) return '过滤模式';
+    if (v === 1) return '严格模式';
+    if (v === 0) return '已禁用';
+    return '不支持';
+  }
+
   async function loadHome() {
-    const data = await api('api/status');
-    const k = data.kernel || {};
+    const data = await api('api/home');
+    const k = data.status || {};
     const root = !!k.isRootAvailable;
     $('#home-status').textContent = root ? '已获得临时 root' : '未 root';
     $('#home-badge').textContent = root ? 'ROOT' : '未 root';
     $('#home-hint').textContent = root
       ? '临时 root 已生效；重启后失效，需要重新越狱并 late-load。'
       : '请先通过越狱入口（Magica）或手动 ksud late-load 获取临时 root。';
+
+    const tags = [];
+    if (k.lkmMode === true) tags.push('LKM');
+    if (k.isLateLoadMode) tags.push('越狱模式');
+    $('#home-tags').innerHTML = tags.map((t) => `<span class="tag">${t}</span>`).join('');
+
     $('#st-kmi').textContent = kmiOf(k.kernelVersion);
-    $('#st-kernel').textContent = k.kernelVersion ? `${k.kernelVersion.major}.${k.kernelVersion.patchLevel}.${k.kernelVersion.subLevel}` : '—';
+    $('#st-kernel').textContent = k.kernelVersion
+      ? `${k.kernelVersion.major}.${k.kernelVersion.patchLevel}.${k.kernelVersion.subLevel}` : '—';
     $('#st-late').textContent = k.isLateLoadMode ? '是' : '否';
     $('#st-hook').textContent = k.hookType || '—';
-    $('#st-version').textContent = String(data.version || '?').replace(/^v/i, 'v') + ' (' + (data.versionCode || '?') + ')';
-    $('#home-detail').textContent = JSON.stringify(k, null, 2);
+
+    $('#v-device').textContent = [data.deviceBrand, data.deviceModel].filter(Boolean).join(' ') || '—';
+    $('#v-kernel').textContent = data.kernelRelease || '—';
+    $('#v-android').textContent = data.androidVersion || '—';
+    $('#v-driver').textContent = k.ksuFullVersion || '—';
+    $('#v-manager').textContent = 'v' + String(data.version || '?').replace(/^v/i, '') + ' (' + (data.versionCode || '?') + ')';
+    $('#v-susfs').textContent = data.susfsVersion || '—';
+
+    $('#s-selinux').textContent = data.selinuxStatus || '—';
+    $('#s-seccomp').textContent = seccompText(data.seccompStatus);
+    $('#s-kmi').textContent = kmiOf(k.kernelVersion);
+    $('#s-hook').textContent = k.hookType || '—';
+    $('#s-late').textContent = k.isLateLoadMode ? '是' : '否';
+
+    $('#st-version').textContent = 'v' + String(data.version || '?').replace(/^v/i, '') + ' (' + (data.versionCode || '?') + ')';
+    $('#home-detail').textContent = JSON.stringify(data, null, 2);
     setConn(true);
   }
 
@@ -172,6 +200,8 @@
     document.querySelectorAll('[data-page]').forEach((el) => el.addEventListener('click', () => navigate(el.dataset.page)));
     $('#btn-refresh').addEventListener('click', () => navigate(current));
     $('#btn-modules-refresh').addEventListener('click', () => loadModules().catch((e) => toast(e.message, true)));
+    const openLogs = $('#btn-open-logs');
+    if (openLogs) openLogs.addEventListener('click', () => navigate('logs'));
 
     $('#set-enabled').addEventListener('change', async (e) => {
       try { await patchWebUi({ enabled: e.target.checked }); toast('已更新'); setTimeout(() => loadSettings().catch(() => {}), 800); }

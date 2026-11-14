@@ -224,6 +224,18 @@ class WebUiHttpServer(
                 else -> "Unknown"
             }
         }.getOrDefault("Unknown")
+        val seccomp = runCatching {
+            java.io.File("/proc/self/status").readLines()
+                .firstOrNull { it.startsWith("Seccomp:") }
+                ?.substringAfter(':')?.trim()?.toIntOrNull()
+        }.getOrNull() ?: -1
+        val susfsVersion = listOf(
+            "/proc/susfs_version",
+            "/sys/kernel/susfs/version",
+            "/sys/module/susfs_guard_lkm/version",
+        ).firstNotNullOfOrNull { path ->
+            runCatching { java.io.File(path).readText().trim() }.getOrNull()?.ifBlank { null }
+        } ?: ""
         val payload = mapOf(
             "status" to status,
             "version" to BuildConfig.VERSION_NAME,
@@ -233,7 +245,8 @@ class WebUiHttpServer(
             "androidVersion" to android.os.Build.VERSION.RELEASE,
             "kernelRelease" to System.getProperty("os.version").orEmpty(),
             "selinuxStatus" to selinux,
-            "seccompStatus" to -1,
+            "seccompStatus" to seccomp,
+            "susfsVersion" to susfsVersion,
             "moduleCount" to moduleRepository.installedModules.value.modules.size,
             "superuserCount" to superUserRepository.state.value.groups.size,
             "modulesRefreshed" to modules.isSuccess,

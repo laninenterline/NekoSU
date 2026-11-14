@@ -107,3 +107,15 @@ button.danger{border:1px solid var(--error);color:var(--error);background:transp
   .bnav.active{color:var(--on-secondary-container)}
   .bnav.active span{background:var(--secondary-container);border-radius:999px;width:52px;height:30px;display:grid;place-items:center}
 }
+
+
+.section-title{margin:18px 6px 8px;font-size:13px;font-weight:600;color:var(--primary)}
+.list-card{padding:0 16px}
+.info-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--outline-variant)}
+.info-row:last-child{border-bottom:none}
+.info-k{color:var(--on-surface-variant);flex:0 0 auto;font-size:14px}
+.info-v{text-align:right;word-break:break-all;font-size:14px}
+.hero-tags{display:flex;gap:8px;margin:-2px 4px 6px 4px}
+.tag{background:var(--primary);color:var(--on-primary);padding:2px 9px;border-radius:8px;font-size:12px}
+details.card summary{cursor:pointer;list-style:none}
+details.card summary::-webkit-details-marker{display:none}

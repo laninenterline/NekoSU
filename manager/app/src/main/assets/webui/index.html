@@ -13,7 +13,6 @@
     <button class="rail-item active" data-page="home"><span class="i">⌂</span><em>首页</em></button>
     <button class="rail-item" data-page="modules"><span class="i">▦</span><em>模块</em></button>
     <button class="rail-item" data-page="superuser"><span class="i">◉</span><em>超级用户</em></button>
-    <button class="rail-item" data-page="logs"><span class="i">≡</span><em>日志</em></button>
     <button class="rail-item" data-page="settings"><span class="i">⚙</span><em>设置</em></button>
     <div class="rail-foot" id="rail-status"></div>
   </nav>
@@ -49,10 +48,31 @@
         <div class="card stat"><div class="stat-k">Hook</div><div class="stat-v mono" id="st-hook">—</div></div>
       </div>
 
-      <div class="card">
-        <div class="card-head"><b>运行信息</b><span class="muted" id="st-version"></span></div>
-        <pre class="json" id="home-detail"></pre>
+      <div class="hero-tags" id="home-tags"></div>
+
+      <div class="section-title">版本信息</div>
+      <div class="card list-card">
+        <div class="info-row"><div class="info-k">设备</div><div class="info-v" id="v-device">—</div></div>
+        <div class="info-row"><div class="info-k">内核版本</div><div class="info-v mono" id="v-kernel">—</div></div>
+        <div class="info-row"><div class="info-k">Android 版本</div><div class="info-v" id="v-android">—</div></div>
+        <div class="info-row"><div class="info-k">内核驱动版本</div><div class="info-v mono" id="v-driver">—</div></div>
+        <div class="info-row"><div class="info-k">管理器版本</div><div class="info-v mono" id="v-manager">—</div></div>
+        <div class="info-row"><div class="info-k">SuSFS 版本</div><div class="info-v mono" id="v-susfs">—</div></div>
       </div>
+
+      <div class="section-title">状态信息</div>
+      <div class="card list-card">
+        <div class="info-row"><div class="info-k">SELinux 状态</div><div class="info-v" id="s-selinux">—</div></div>
+        <div class="info-row"><div class="info-k">Seccomp 状态</div><div class="info-v" id="s-seccomp">—</div></div>
+        <div class="info-row"><div class="info-k">KMI</div><div class="info-v mono" id="s-kmi">—</div></div>
+        <div class="info-row"><div class="info-k">Hook 类型</div><div class="info-v mono" id="s-hook">—</div></div>
+        <div class="info-row"><div class="info-k">Late-load</div><div class="info-v" id="s-late">—</div></div>
+      </div>
+
+      <details class="card">
+        <summary class="card-head"><b>运行信息</b><span class="muted" id="st-version"></span></summary>
+        <pre class="json" id="home-detail"></pre>
+      </details>
     </section>
 
     <!-- 模块 -->
@@ -114,6 +134,14 @@
         <div class="setting-row">
           <div><div class="setting-title">Token</div><div class="setting-desc mono" id="set-token">—</div></div>
           <button class="ghost" id="btn-copy-token">复制</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><b>工具</b></div>
+        <div class="setting-row">
+          <div><div class="setting-title">日志中心</div><div class="setting-desc">SU / Magica / Crash / Metamodule / Problem</div></div>
+          <button class="ghost" id="btn-open-logs">打开</button>
         </div>
       </div>
 
