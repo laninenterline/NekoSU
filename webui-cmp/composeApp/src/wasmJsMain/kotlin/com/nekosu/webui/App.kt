@@ -224,7 +224,25 @@ fun App() {
 @Composable
 private fun HomeScreen() {
     val home = AppData.home ?: fallbackHome()
+    val status = home.status
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val model = com.nekosu.shared.SharedHomeModel(
+        working = status.isRootAvailable,
+        lkmMode = status.lkmMode == true,
+        lateLoad = status.isLateLoadMode,
+        superuserCount = home.superuserCount,
+        moduleCount = home.moduleCount,
+        device = home.deviceModel,
+        kernelRelease = home.kernelRelease,
+        androidVersion = home.androidVersion,
+        kernelDriverVersion = status.ksuFullVersion ?: "—",
+        managerVersion = home.version + " (" + home.versionCode + ")",
+        susfsVersion = home.susfsVersion,
+        selinux = home.selinuxStatus,
+        seccomp = seccompText(home.seccompStatus),
+        kmi = formatKmi(status.kernelVersion),
+        hook = status.hookType.ifBlank { "—" },
+    )
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -242,35 +260,7 @@ private fun HomeScreen() {
             )
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Spacer(Modifier.height(6.dp))
-            StatusCard(home)
-            Spacer(Modifier.height(2.dp))
-            SegmentedSection("版本信息") {
-                InfoRow(Icons.TwoTone.Smartphone, "设备型号", home.deviceModel)
-                InfoRow(Icons.TwoTone.DeveloperBoard, "内核版本（release）", home.kernelRelease)
-                InfoRow(Icons.TwoTone.Android, "Android 版本", home.androidVersion)
-                InfoRow(Icons.TwoTone.Memory, "内核版本", home.status.ksuFullVersion ?: "—")
-                InfoRow(Icons.TwoTone.Tag, "管理器版本", "${home.version} (${home.versionCode})")
-            }
-            SegmentedSection("状态信息") {
-                InfoRow(Icons.TwoTone.Security, "SELinux 状态", home.selinuxStatus)
-                InfoRow(Icons.TwoTone.FilterList, "Seccomp 状态", seccompText(home.seccompStatus))
-                InfoRow(Icons.TwoTone.Tag, "KMI", formatKmi(home.status.kernelVersion))
-            }
-            SegmentedSection("支持") {
-                InfoRow(Icons.TwoTone.VolunteerActivism, "支持 NekoSU", "支持上游开发者")
-                InfoRow(Icons.TwoTone.MenuBook, "了解更多", "了解 KernelSU")
-            }
-            Spacer(Modifier.height(16.dp))
-        }
+        com.nekosu.shared.SharedHomeContent(model, Modifier.padding(padding))
     }
 }
 

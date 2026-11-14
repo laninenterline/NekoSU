@@ -16,6 +16,9 @@ kotlin {
         binaries.executable()
     }
     sourceSets {
+        commonMain {
+            kotlin.srcDir("../../NekoSU/ui-shared/src/commonMain/kotlin")
+        }
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)

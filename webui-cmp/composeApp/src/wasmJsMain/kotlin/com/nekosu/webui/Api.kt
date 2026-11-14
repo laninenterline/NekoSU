@@ -39,6 +39,7 @@ data class HomeInfo(
     val kernelRelease: String = "—",
     val selinuxStatus: String = "Unknown",
     val seccompStatus: Int = -1,
+    val susfsVersion: String = "",
     val moduleCount: Int = 0,
     val superuserCount: Int = 0,
 )
@@ -240,6 +241,7 @@ fun fallbackHome(): HomeInfo = HomeInfo(
     kernelRelease = "5.10.245-android13-8",
     selinuxStatus = "Enforcing",
     seccompStatus = 2,
+    susfsVersion = "v2.3.0",
     moduleCount = 3,
     superuserCount = 2,
 )
