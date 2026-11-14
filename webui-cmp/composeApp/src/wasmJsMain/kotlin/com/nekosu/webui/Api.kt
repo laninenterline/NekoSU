@@ -101,20 +101,32 @@ data class LogsInfo(
 /* --------------------------- JS fetch bridge ---------------------------- */
 
 @JsFun(
-    """(url, token, cb) => {
-        fetch(url, { headers: token ? { 'Authorization': 'Bearer ' + token } : {} })
+    """(url, token, method, body, cb) => {
+        const opts = { method: method || 'GET', headers: {} };
+        if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+        if (body) { opts.headers['Content-Type'] = 'application/json'; opts.body = body; }
+        fetch(url, opts)
             .then(r => r.text())
             .then(t => cb(t))
             .catch(e => cb('__NEKO_ERR__' + e));
     }"""
 )
-private external fun jsFetchText(url: String, token: String, cb: (String) -> Unit)
+private external fun jsFetch(url: String, token: String, method: String, body: String, cb: (String) -> Unit)
+
+@JsFun("(text, name) => { const a = document.createElement('a'); const b = new Blob([text], { type: 'text/plain' }); a.href = URL.createObjectURL(b); a.download = name; a.click(); URL.revokeObjectURL(a.href); }")
+private external fun jsDownload(text: String, name: String)
+
+fun downloadLog(text: String, name: String) = jsDownload(text, name)
 
 @JsFun("() => (window.NEKO_WEBUI && window.NEKO_WEBUI.token) || ''")
 private external fun jsToken(): String
 
-private suspend fun fetchText(path: String): String? = suspendCancellableCoroutine { cont ->
-    jsFetchText(path, jsToken()) { text ->
+private suspend fun fetchText(
+    path: String,
+    method: String = "GET",
+    body: String? = null,
+): String? = suspendCancellableCoroutine { cont ->
+    jsFetch(path, jsToken(), method, body ?: "") { text ->
         cont.resume(if (text.startsWith("__NEKO_ERR__")) null else text)
     }
 }
@@ -129,6 +141,8 @@ private suspend inline fun <reified T> get(path: String): T? {
     val text = fetchText(path) ?: return null
     return runCatching { json.decodeFromString<T>(text) }.getOrNull()
 }
+
+private suspend fun post(path: String, body: String): String? = fetchText(path, "POST", body)
 
 /* ------------------------------ live data ------------------------------- */
 
@@ -145,6 +159,46 @@ object AppData {
         groups = get<List<AppGroupInfo>>("/api/superuser") ?: emptyList()
         settings = get<WebUiSettingsInfo>("/api/settings")
         loaded = true
+    }
+
+    suspend fun loadLogs(source: String): String? =
+        get<LogsInfo>("/api/logs?source=" + source)?.text
+
+    suspend fun setSuperuserRoot(uid: Int, allowed: Boolean): Boolean {
+        val ok = post("/api/superuser/$uid/root", "{\"allowed\":$allowed}") != null
+        if (ok) groups = get<List<AppGroupInfo>>("/api/superuser") ?: groups
+        return ok
+    }
+
+    suspend fun setModuleEnabled(id: String, enabled: Boolean): Boolean {
+        val action = if (enabled) "enable" else "disable"
+        val ok = post("/api/modules/" + encodePath(id) + "/" + action, "{}") != null
+        if (ok) modules = get<List<ModuleInfo>>("/api/modules") ?: modules
+        return ok
+    }
+
+    suspend fun setModuleRemoved(id: String, removed: Boolean): Boolean {
+        val action = if (removed) "remove" else "restore"
+        val ok = post("/api/modules/" + encodePath(id) + "/" + action, "{}") != null
+        if (ok) modules = get<List<ModuleInfo>>("/api/modules") ?: modules
+        return ok
+    }
+
+    private fun encodePath(value: String): String =
+        value.replace("%", "%25").replace("/", "%2F").replace(" ", "%20")
+
+    suspend fun updateWebUi(enabled: Boolean? = null, randomPort: Boolean? = null) {
+        val payload = buildString {
+            append("{")
+            if (enabled != null) append("\"enabled\":").append(enabled)
+            if (randomPort != null) {
+                if (enabled != null) append(",")
+                append("\"randomPort\":").append(randomPort)
+            }
+            append("}")
+        }
+        val text = post("/api/settings/webui", payload) ?: return
+        runCatching { json.decodeFromString<WebUiSettingsInfo>(text) }.getOrNull()?.let { settings = it }
     }
 }
 

@@ -11,8 +11,11 @@ pluginManagement {
     }
 }
 
+val nekoLocalMaven = System.getenv("NEKO_MAVEN_REPO")
+
 dependencyResolutionManagement {
     repositories {
+        nekoLocalMaven?.let { maven { url = uri(it) } }
         google()
         mavenCentral()
         maven("https://jitpack.io")

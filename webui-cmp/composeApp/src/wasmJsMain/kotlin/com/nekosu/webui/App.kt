@@ -1,5 +1,6 @@
 package com.nekosu.webui
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,7 +24,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.automirrored.twotone.ArrowBack
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.twotone.Download
+import androidx.compose.material.icons.twotone.Refresh
+import androidx.compose.material.icons.twotone.Search
 import androidx.compose.material.icons.twotone.Settings
 import androidx.compose.material.icons.automirrored.twotone.Article
 import androidx.compose.material.icons.twotone.Adb
@@ -56,12 +63,17 @@ import androidx.compose.material.icons.twotone.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
@@ -77,6 +89,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -85,12 +98,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.nekosu.webui.resources.NotoSansSC_Regular
 import com.nekosu.webui.resources.Res
 import org.jetbrains.compose.resources.Font
+import kotlinx.coroutines.launch
+
+private val LocalSettingsSearch = androidx.compose.runtime.compositionLocalOf { "" }
 
 private val bottomItems = listOf(
     Triple("首页", Icons.Filled.Home, 0),
@@ -113,6 +130,7 @@ private data class ModuleEntry(
 @Composable
 fun App() {
     var page by remember { mutableStateOf(0) }
+    var subScreen by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { AppData.load() }
     val appFont = FontFamily(Font(Res.font.NotoSansSC_Regular))
     val baseTypography = androidx.compose.material3.Typography()
@@ -134,28 +152,35 @@ fun App() {
         labelSmall = baseTypography.labelSmall.copy(fontFamily = appFont),
     )
 
-    MaterialTheme(typography = typography) {
+    val colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
+    MaterialTheme(typography = typography, colorScheme = colorScheme) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             Scaffold(
                 bottomBar = {
-                    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-                        bottomItems.forEach { (label, icon, index) ->
-                            NavigationBarItem(
-                                selected = page == index,
-                                onClick = { page = index },
-                                icon = { Icon(icon, contentDescription = label) },
-                                label = { Text(label) },
-                            )
+                    if (subScreen == null) {
+                        NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+                            bottomItems.forEach { (label, icon, index) ->
+                                NavigationBarItem(
+                                    selected = page == index,
+                                    onClick = { page = index },
+                                    icon = { Icon(icon, contentDescription = label) },
+                                    label = { Text(label) },
+                                )
+                            }
                         }
                     }
                 },
             ) { padding ->
                 Box(Modifier.padding(padding).fillMaxSize()) {
-                    when (page) {
-                        0 -> HomeScreen()
-                        1 -> SuperUserScreen()
-                        2 -> ModuleScreen()
-                        else -> SettingsScreen()
+                    if (subScreen == "logs") {
+                        LogCenterScreen(onBack = { subScreen = null })
+                    } else {
+                        when (page) {
+                            0 -> HomeScreen()
+                            1 -> SuperUserScreen()
+                            2 -> ModuleScreen()
+                            else -> SettingsScreen(onOpenLogs = { subScreen = "logs" })
+                        }
                     }
                 }
             }
@@ -238,7 +263,7 @@ private fun StatusCard(home: HomeInfo) {
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                 )
             }
-            if (home.status.lkmMode != false) LabelPill("LKM")
+            if (home.status.lkmMode == true) LabelPill("LKM")
             if (home.status.isLateLoadMode) {
                 Spacer(Modifier.width(6.dp))
                 LabelPill("越狱模式")
@@ -325,6 +350,7 @@ private fun ModuleScreen() {
         }
     }
     var search by remember { mutableStateOf("") }
+    val moduleScope = rememberCoroutineScope()
     val enabledStates = remember { mutableStateMapOf<String, Boolean>().apply { modules.forEach { put(it.id, it.enabled) } } }
     val filtered = modules.filter { it.name.contains(search, ignoreCase = true) || it.id.contains(search, ignoreCase = true) }
 
@@ -376,7 +402,13 @@ private fun ModuleScreen() {
                 ModuleCard(
                     module = module,
                     enabled = enabledStates[module.id] ?: module.enabled,
-                    onEnabledChange = { enabledStates[module.id] = it },
+                    onEnabledChange = { enabled ->
+                        enabledStates[module.id] = enabled
+                        moduleScope.launch { AppData.setModuleEnabled(module.id, enabled) }
+                    },
+                    onRemove = {
+                        moduleScope.launch { AppData.setModuleRemoved(module.id, true) }
+                    },
                 )
             }
             if (filtered.isEmpty()) {
@@ -402,7 +434,12 @@ private fun WarningCard(message: String, icon: ImageVector) {
 }
 
 @Composable
-private fun ModuleCard(module: ModuleEntry, enabled: Boolean, onEnabledChange: (Boolean) -> Unit) {
+private fun ModuleCard(
+    module: ModuleEntry,
+    enabled: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    onRemove: () -> Unit,
+) {
     Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -433,7 +470,7 @@ private fun ModuleCard(module: ModuleEntry, enabled: Boolean, onEnabledChange: (
             Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
                 TextButton(onClick = {}) { Text("操作") }
-                TextButton(onClick = {}) {
+                TextButton(onClick = onRemove) {
                     Text("卸载", color = MaterialTheme.colorScheme.error)
                 }
             }
@@ -477,6 +514,8 @@ private fun SuperUserScreen() {
     val filtered = groups.filter {
         it.label.contains(search, ignoreCase = true) || it.packageName.contains(search, ignoreCase = true)
     }
+    val routeScope = rememberCoroutineScope()
+    val groupStates = remember { mutableStateMapOf<Int, Boolean>().apply { groups.forEach { put(it.uid, it.allowSu) } } }
 
     Scaffold(
         topBar = {
@@ -516,14 +555,19 @@ private fun SuperUserScreen() {
                     }
                 }
             } else {
-                items(filtered, key = { it.uid }) { group -> AppGroupCard(group) }
+                items(filtered, key = { it.uid }) { group ->
+                    AppGroupCard(group) { allowed ->
+                        groupStates[group.uid] = allowed
+                        routeScope.launch { AppData.setSuperuserRoot(group.uid, allowed) }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun AppGroupCard(group: AppGroupMock) {
+private fun AppGroupCard(group: AppGroupMock, onRootChange: (Boolean) -> Unit) {
     Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(48.dp)) {
@@ -553,11 +597,16 @@ private fun AppGroupCard(group: AppGroupMock) {
                     group.userName?.let { LabelPillTonal(it, MaterialTheme.colorScheme.secondaryContainer) }
                 }
             }
-            Icon(
-                Icons.TwoTone.ChevronRight,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            Switch(
+                checked = group.allowSu,
+                onCheckedChange = onRootChange,
+                thumbContent = {
+                    Icon(
+                        if (group.allowSu) Icons.TwoTone.Check else Icons.TwoTone.Close,
+                        contentDescription = null,
+                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                    )
+                },
             )
         }
     }
@@ -579,16 +628,18 @@ private fun LabelPillTonal(text: String, color: androidx.compose.ui.graphics.Col
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SettingsScreen() {
+private fun SettingsScreen(onOpenLogs: () -> Unit) {
+    var search by remember { mutableStateOf("") }
     var suLog by remember { mutableStateOf(true) }
     var selinuxHide by remember { mutableStateOf(true) }
     var umountDefault by remember { mutableStateOf(false) }
     var checkManagerUpdate by remember { mutableStateOf(true) }
-    var checkBetaUpdate by remember { mutableStateOf(false) }
+    var checkBetaUpdate by remember { mutableStateOf(true) }
     var checkModuleUpdate by remember { mutableStateOf(true) }
     val liveSettings = AppData.settings ?: fallbackSettings()
     var webUiEnabled by remember(liveSettings) { mutableStateOf(liveSettings.enabled) }
     var webUiRandomPort by remember(liveSettings) { mutableStateOf(liveSettings.randomPort) }
+    val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
@@ -604,86 +655,249 @@ private fun SettingsScreen() {
             )
         },
     ) { padding ->
+        androidx.compose.runtime.CompositionLocalProvider(LocalSettingsSearch provides search) {
         Column(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Spacer(Modifier.height(4.dp))
-            SegmentedSection("内核功能") {
-                SwitchInfoRow(Icons.TwoTone.Science, "Su 兼容模式", "仅由 adbd 或 KernelSU Root 进程启动的 shell 可获取 Root", suLog) { suLog = it }
-                SwitchInfoRow(Icons.TwoTone.Policy, "隐藏 SELinux 修改", "阻止应用检测 SELinux 修改", selinuxHide) { selinuxHide = it }
-                SwitchInfoRow(Icons.TwoTone.FolderDelete, "默认卸载模块", "所有应用默认不挂载模块", umountDefault) { umountDefault = it }
-                ChevronInfoRow(Icons.TwoTone.FolderOff, "Umount 路径管理", "管理不挂载模块的路径")
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("搜索设置") },
+                leadingIcon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+                shape = RoundedCornerShape(28.dp),
+                singleLine = true,
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    unfocusedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
+                    focusedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
+            )
+            Spacer(Modifier.height(8.dp))
+            SettingGroup("应用设置") {
+                SettingSwitchRow(Icons.TwoTone.Update, "检查管理器更新", "自动检查管理器更新", checkManagerUpdate) { checkManagerUpdate = it }
+                SettingSwitchRow(Icons.TwoTone.Science, "检查测试版更新", "自动检查 main 分支的测试版构建", checkBetaUpdate) { checkBetaUpdate = it }
+                SettingSwitchRow(Icons.Filled.Extension, "检查模块更新", "自动检查已安装模块的更新", checkModuleUpdate) { checkModuleUpdate = it }
+                SettingChevronRow(Icons.TwoTone.Settings, "主题设置", "主题设置")
             }
-            SegmentedSection("应用设置") {
-                SwitchInfoRow(Icons.TwoTone.Update, "检查管理器更新", "启动时检查稳定版更新", checkManagerUpdate) { checkManagerUpdate = it }
-                SwitchInfoRow(Icons.TwoTone.Science, "检查测试版更新", "检查 beta 更新", checkBetaUpdate) { checkBetaUpdate = it }
-                SwitchInfoRow(Icons.Filled.Extension, "检查模块更新", "启动时检查已安装模块更新", checkModuleUpdate) { checkModuleUpdate = it }
-                ChevronInfoRow(Icons.TwoTone.Settings, "主题设置", "自定义配色、模糊、卡片行为")
+            SettingGroup("内核功能") {
+                SettingSwitchRow(Icons.TwoTone.Science, "Su 兼容模式", "仅由 adbd 或 KernelSU Root 进程启动的 shell 可获取 Root", suLog) { suLog = it }
+                SettingSwitchRow(Icons.TwoTone.Policy, "隐藏 SELinux 修改", "阻止应用检测 SELinux 修改", selinuxHide) { selinuxHide = it }
+                SettingSwitchRow(Icons.TwoTone.FolderDelete, "默认卸载模块", "所有应用默认不挂载模块", umountDefault) { umountDefault = it }
+                SettingChevronRow(Icons.TwoTone.FolderOff, "Umount 路径管理", "管理不挂载模块的路径")
             }
-            SegmentedSection("工具") {
-                ChevronInfoRow(Icons.TwoTone.Science, "KMI 诊断", "查看内核与 KMI 匹配信息")
-                ChevronInfoRow(Icons.AutoMirrored.TwoTone.Article, "日志中心", "SU / Magica / Crash / Metamodule / Problem 日志")
-                ChevronInfoRow(Icons.TwoTone.Save, "备份设置", "导出当前设置")
-                ChevronInfoRow(Icons.TwoTone.RestartAlt, "恢复设置", "从备份导入设置")
+            SettingGroup("工具") {
+                SettingChevronRow(Icons.TwoTone.Science, "KMI / 加载诊断", "设备内核、内置 KMI 匹配与加载状态")
+                SettingChevronRow(Icons.AutoMirrored.TwoTone.Article, "日志中心", "SU / Magica / Crash / Metamodule / Problem 日志", onClick = onOpenLogs)
+                SettingChevronRow(Icons.TwoTone.Save, "备份设置", "导出当前设置")
+                SettingChevronRow(Icons.TwoTone.RestartAlt, "恢复设置", "从备份导入设置")
             }
-            SegmentedSection("WebUI") {
-                SwitchInfoRow(Icons.TwoTone.Adb, "启用 WebUI 服务", "在 127.0.0.1 启动浏览器版管理器", webUiEnabled) { webUiEnabled = it }
-                SwitchInfoRow(Icons.TwoTone.ElectricalServices, "随机端口", "由系统分配空闲端口；关闭时使用 8787", webUiRandomPort) { webUiRandomPort = it }
-                ChevronInfoRow(Icons.TwoTone.Info, "打开 WebUI 页面", "查看地址 / Token / 在浏览器中打开")
+            SettingGroup("WebUI") {
+                SettingSwitchRow(Icons.TwoTone.Adb, "启用 WebUI 服务", "在 127.0.0.1 启动浏览器版管理器", webUiEnabled) {
+                    webUiEnabled = it
+                    scope.launch { AppData.updateWebUi(enabled = it) }
+                }
+                SettingSwitchRow(Icons.TwoTone.ElectricalServices, "随机端口", "由系统分配空闲端口；关闭时使用 8787", webUiRandomPort) {
+                    webUiRandomPort = it
+                    scope.launch { AppData.updateWebUi(randomPort = it) }
+                }
+                SettingChevronRow(Icons.TwoTone.Info, "打开 WebUI 页面", "查看地址 / Token / 在浏览器中打开")
             }
-            SegmentedSection("关于") {
-                ChevronInfoRow(Icons.TwoTone.Info, "关于", "版本、开源许可、致谢")
+            SettingGroup("关于") {
+                SettingChevronRow(Icons.TwoTone.Info, "关于", "版本、开源许可、致谢")
             }
             Spacer(Modifier.height(16.dp))
         }
+        }
     }
 }
 
 @Composable
-private fun SwitchInfoRow(icon: ImageVector, title: String, description: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onChange,
-            thumbContent = {
-                Icon(
-                    if (checked) Icons.TwoTone.Check else Icons.TwoTone.Close,
-                    contentDescription = null,
-                    modifier = Modifier.size(SwitchDefaults.IconSize),
-                )
-            },
+private fun SettingGroup(title: String, content: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            title,
+            modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 2.dp),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
         )
+        content()
     }
-    HorizontalDivider(modifier = Modifier.padding(start = 48.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 }
 
 @Composable
-private fun ChevronInfoRow(icon: ImageVector, title: String, description: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun SettingRowSurface(content: @Composable () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) { content() }
+}
+
+@Composable
+private fun SettingSwitchRow(icon: ImageVector, title: String, description: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    val query = LocalSettingsSearch.current
+    if (query.isNotBlank() && !title.contains(query, true) && !description.contains(query, true)) return
+    SettingRowSurface {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(
+                checked = checked,
+                onCheckedChange = onChange,
+                thumbContent = {
+                    Icon(
+                        if (checked) Icons.TwoTone.Check else Icons.TwoTone.Close,
+                        contentDescription = null,
+                        modifier = Modifier.size(SwitchDefaults.IconSize),
+                    )
+                },
+            )
         }
-        Icon(Icons.TwoTone.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
     }
-    HorizontalDivider(modifier = Modifier.padding(start = 48.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+}
+
+@Composable
+private fun SettingChevronRow(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    onClick: (() -> Unit)? = null,
+) {
+    val query = LocalSettingsSearch.current
+    if (query.isNotBlank() && !title.contains(query, true) && !description.contains(query, true)) return
+    SettingRowSurface {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable(enabled = onClick != null) { onClick?.invoke() }
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(Icons.TwoTone.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(24.dp))
+        }
+    }
+}
+
+
+/* ============================== 日志中心（对照 LogCenterScreen.kt） ============================== */
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LogCenterScreen(onBack: () -> Unit) {
+    val sources = listOf(
+        "ALL" to "全部",
+        "SULOG" to "SU",
+        "MAGICA" to "Magica",
+        "CRASH" to "Crash",
+        "METAMODULE" to "Metamodule",
+        "PROBLEM" to "Problem",
+    )
+    var source by remember { mutableStateOf("ALL") }
+    var query by remember { mutableStateOf("") }
+    var logsText by remember { mutableStateOf("") }
+    var loading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    fun refresh() {
+        loading = true
+        scope.launch {
+            logsText = AppData.loadLogs(source) ?: "（预览模式：无法连接 /api/logs，装入 APK 后显示真机日志）"
+            loading = false
+        }
+    }
+
+    LaunchedEffect(source) { refresh() }
+
+    val filtered = remember(logsText, query) {
+        if (query.isBlank()) logsText
+        else logsText.split('\n').filter { it.contains(query, ignoreCase = true) }.joinToString("\n")
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("日志中心", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = "返回")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { refresh() }) {
+                        Icon(Icons.TwoTone.Refresh, contentDescription = "刷新")
+                    }
+                    IconButton(onClick = { downloadLog(filtered, "nekosu-" + source.lowercase() + ".log") }) {
+                        Icon(Icons.TwoTone.Download, contentDescription = "导出")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            )
+        },
+    ) { padding ->
+        Column(
+            Modifier.padding(padding).fillMaxSize().padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                sources.forEach { (value, label) ->
+                    FilterChip(
+                        selected = source == value,
+                        onClick = { source = value },
+                        label = { Text(label) },
+                        shape = RoundedCornerShape(999.dp),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        ),
+                    )
+                }
+            }
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("搜索日志") },
+                leadingIcon = { Icon(Icons.TwoTone.Search, contentDescription = null) },
+                shape = RoundedCornerShape(28.dp),
+                singleLine = true,
+            )
+            if (loading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+            ) {
+                Text(
+                    text = filtered.ifEmpty { "（无日志）" },
+                    modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp),
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+    }
 }
