@@ -576,13 +576,23 @@ private fun SuperUserScreen(onOpenProfile: (Int) -> Unit) {
                 }
             } else {
                 items(filtered, key = { it.uid }) { group ->
-                    AppGroupCard(
-                        group = group,
+                    com.nekosu.shared.SharedAppGroupCard(
+                        model = com.nekosu.shared.SharedAppGroupModel(
+                            label = group.label,
+                            packageName = group.packageName,
+                            uid = group.uid,
+                            allowSu = group.allowSu,
+                            shouldUmount = group.shouldUmount,
+                            customProfile = group.custom,
+                            isManager = group.manager,
+                            appsCount = group.appsCount,
+                            userName = group.userName,
+                        ),
+                        onClick = { onOpenProfile(group.uid) },
                         onRootChange = { allowed ->
                             groupStates[group.uid] = allowed
                             routeScope.launch { AppData.setSuperuserRoot(group.uid, allowed) }
                         },
-                        onClick = { onOpenProfile(group.uid) },
                     )
                 }
             }

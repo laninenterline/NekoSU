@@ -65,6 +65,8 @@ import java.util.Locale
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import com.nekosu.R
+import com.nekosu.shared.SharedAppGroupCard
+import com.nekosu.shared.SharedAppGroupModel
 import com.nekosu.domain.model.AllowlistOperationResult
 import com.nekosu.domain.model.InstalledAppGroup
 import com.nekosu.domain.model.SuperUserLoadFailure
@@ -492,82 +494,18 @@ private fun AppGroupItem(
     onClick: () -> Unit,
 ) {
     val mainApp = appGroup.mainApp
-    SettingsBaseWidget(
-        onClick = {
-            onClick()
-        },
-        title = mainApp.label,
-        description = if (appGroup.apps.size > 1) {
-            stringResource(R.string.group_contains_apps, appGroup.apps.size)
-        } else {
-            mainApp.displayIdentifier
-        },
-        descriptionColumnContent = {
-            Spacer(modifier = Modifier.height(5.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                if (appGroup.allowSu) {
-                    LabelText(label = "ROOT")
-                } else {
-                    if (appGroup.shouldUmount) {
-                        LabelText(
-                            label = "UMOUNT",
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        )
-                    }
-                }
-                if (appGroup.hasCustomProfile) {
-                    LabelText(
-                        label = "CUSTOM",
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    )
-                } else if (!appGroup.allowSu) {
-                    LabelText(
-                        label = "DEFAULT",
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    )
-                }
-                if (isManager) {
-                    LabelText(
-                        label = "MANAGER",
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                    )
-                }
-                if (appGroup.apps.size > 1) {
-                    appGroup.userName?.let {
-                        LabelText(
-                            label = it,
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        )
-                    }
-                }
-                if (appGroup.isRecentlyInstalled) {
-                    LabelText(
-                        label = stringResource(R.string.recently_installed),
-                        containerColor = MaterialTheme.colorScheme.surfaceBright,
-                    )
-                }
-            }
-        },
-        leadingContent = {
-            PackageIcon(
-                packageName = if (appGroup.isWebViewZygote) "android" else mainApp.packageName,
-                contentDescription = mainApp.label,
-                modifier = Modifier
-                    .padding(4.dp)
-                    .size(48.dp),
-            )
-        },
-        iconPlaceholder = false,
-    ) {
-        Icon(
-            imageVector = Icons.TwoTone.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp),
-        )
-    }
+    SharedAppGroupCard(
+        model = SharedAppGroupModel(
+            label = mainApp.label,
+            packageName = appGroup.primaryPackageName,
+            uid = appGroup.uid,
+            allowSu = appGroup.allowSu,
+            shouldUmount = appGroup.shouldUmount,
+            customProfile = appGroup.hasCustomProfile,
+            isManager = isManager,
+            appsCount = appGroup.apps.size,
+            userName = appGroup.userName,
+        ),
+        onClick = onClick,
+    )
 }
