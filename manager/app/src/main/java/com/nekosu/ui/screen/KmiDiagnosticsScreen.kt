@@ -128,6 +128,32 @@ fun KmiDiagnosticsScreen() {
         containerColor = Color.Transparent,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) { innerPadding ->
+        val advice = buildList {
+            if (!status.isRootAvailable) add("Root 不可用：请先通过越狱入口（Magica）或手动 ksud late-load 获取临时 root")
+            if (matched == null) add("内置 KMI 未匹配当前内核")
+            if (status.isRootAvailable && !info.susfsEnabled) add("SuSFS 未启用")
+            if (status.isRootAvailable && matched != null) add("KMI 匹配正常")
+        }
+        val sharedModel = com.nekosu.shared.SharedKmiModel(
+            device = info.deviceModel,
+            android = info.androidVersion,
+            kernelRelease = info.kernelRelease,
+            kernelVersion = version.toString(),
+            kmi = kmiText,
+            kmiMatched = matched != null,
+            rootAvailable = status.isRootAvailable,
+            lkmMode = when (status.lkmMode) {
+                true -> "LKM"
+                false -> "Built-in"
+                null -> "-"
+            },
+            lateLoad = status.isLateLoadMode,
+            ksuVersion = "${status.ksuVersion ?: "-"} ${status.ksuFullVersion.orEmpty()}",
+            susfsText = if (info.susfsEnabled) "${info.susfsVersion} (${info.susfsFeatures})" else "未启用",
+            hook = status.hookType.ifBlank { "-" },
+            advice = advice,
+            riskyVendor = MagicaCompat.isRiskyDevice(),
+        )
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
@@ -139,106 +165,14 @@ fun KmiDiagnosticsScreen() {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                OutlinedCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(stringResource(R.string.kmi_diag_summary), style = MaterialTheme.typography.bodyMedium)
-                        Spacer(Modifier.height(8.dp))
-                        row(stringResource(R.string.kmi_diag_device), info.deviceModel)
-                        row(stringResource(R.string.kmi_diag_android), info.androidVersion)
-                        row(stringResource(R.string.kmi_diag_kernel), info.kernelRelease)
-                        row(stringResource(R.string.kmi_diag_kmi), kmiText)
-                        row(
-                            stringResource(R.string.kmi_diag_match),
-                            if (matched != null) {
-                                stringResource(R.string.kmi_diag_match_ok, matched.kmi)
-                            } else {
-                                stringResource(R.string.kmi_diag_match_fail, version.toString())
-                            },
-                        )
-                        row(
-                            stringResource(R.string.kmi_diag_root),
-                            if (status.isRootAvailable) "OK" else "-",
-                        )
-                        row(stringResource(R.string.kmi_diag_lkm), status.lkmMode?.toString() ?: "-")
-                        row(stringResource(R.string.kmi_diag_late_load), status.isLateLoadMode.toString())
-                        row(stringResource(R.string.kmi_diag_ksu), "${status.ksuVersion ?: "-"} ${status.ksuFullVersion.orEmpty()}")
-                        row(
-                            stringResource(R.string.kmi_diag_susfs),
-                            if (info.susfsEnabled) {
-                                "${info.susfsVersion} (${info.susfsFeatures})"
-                            } else {
-                                stringResource(R.string.kmi_diag_susfs_off)
-                            },
-                        )
-                    }
-                }
-            }
-            item {
-                OutlinedCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(stringResource(R.string.kmi_diag_advice_title), style = MaterialTheme.typography.titleSmall)
-                        Spacer(Modifier.height(6.dp))
-                        val advice = buildList {
-                            if (!status.isRootAvailable) add(stringResource(R.string.kmi_diag_advice_no_root))
-                            if (matched == null) add(stringResource(R.string.kmi_diag_advice_no_match))
-                            if (status.isRootAvailable && !info.susfsEnabled) add(stringResource(R.string.kmi_diag_advice_susfs))
-                            if (status.isRootAvailable && matched != null) add(stringResource(R.string.kmi_diag_advice_ok))
-                        }
-                        advice.forEach { Text("\u2022 $it", style = MaterialTheme.typography.bodyMedium) }
-                    }
-                }
-            }
-            if (status.isRootAvailable) {
-                item {
-                    var showReboot by remember { mutableStateOf(false) }
-                    if (showReboot) {
-                        AlertDialog(
-                            onDismissRequest = { showReboot = false },
-                            title = { Text(stringResource(R.string.kmi_diag_reboot_title)) },
-                            text = { Text(stringResource(R.string.kmi_diag_reboot_message)) },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    showReboot = false
-                                    scope.launch {
-                                        withContext(Dispatchers.IO) {
-                                            runCatching {
-                                                ShellUtils.fastCmd(repository.getRootShell(), "reboot")
-                                            }
-                                        }
-                                    }
-                                }) { Text(androidx.compose.ui.res.stringResource(android.R.string.ok)) }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showReboot = false }) {
-                                    Text(androidx.compose.ui.res.stringResource(android.R.string.cancel))
-                                }
-                            },
-                        )
-                    }
-                    TextButton(onClick = { showReboot = true }) {
-                        Text(stringResource(R.string.kmi_diag_reboot_button))
-                    }
-                }
-            }
-            if (MagicaCompat.isRiskyDevice()) {
-                item {
-                    Text(
-                        stringResource(R.string.kmi_diag_risky_note),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = {
+                com.nekosu.shared.SharedKmiContent(
+                    model = sharedModel,
+                    onCopyReport = {
                         copyToClipboard(context, "NekoSU diagnostics", report)
                         scope.launch { snackBarHost.showReplacingSnackbar(copied) }
-                    }) { Text(stringResource(R.string.kmi_diag_copy)) }
-                    TextButton(onClick = { viewModel.dispatch(HomeUiAction.AwaitInitialData) }) {
-                        Text(stringResource(R.string.kmi_diag_refresh))
-                    }
-                }
+                    },
+                    onRefresh = { viewModel.dispatch(HomeUiAction.AwaitInitialData) },
+                )
             }
         }
     }
