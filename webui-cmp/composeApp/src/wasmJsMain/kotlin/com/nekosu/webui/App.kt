@@ -819,7 +819,7 @@ private fun SettingChevronRow(
 }
 
 
-/* ============================== 日志中心（对照 LogCenterScreen.kt） ============================== */
+/* ============================== 日志中心 ============================== */
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -845,14 +845,11 @@ private fun LogCenterScreen(onBack: () -> Unit) {
             loading = false
         }
     }
-
     LaunchedEffect(source) { refresh() }
-
     val filtered = remember(logsText, query) {
         if (query.isBlank()) logsText
         else logsText.split('\n').filter { it.contains(query, ignoreCase = true) }.joinToString("\n")
     }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -866,60 +863,20 @@ private fun LogCenterScreen(onBack: () -> Unit) {
                     IconButton(onClick = { refresh() }) {
                         Icon(Icons.TwoTone.Refresh, contentDescription = "刷新")
                     }
-                    IconButton(onClick = { downloadLog(filtered, "nekosu-" + source.lowercase() + ".log") }) {
-                        Icon(Icons.TwoTone.Download, contentDescription = "导出")
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
             )
         },
     ) { padding ->
-        Column(
-            Modifier.padding(padding).fillMaxSize().padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Row(
-                Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                sources.forEach { (value, label) ->
-                    FilterChip(
-                        selected = source == value,
-                        onClick = { source = value },
-                        label = { Text(label) },
-                        shape = RoundedCornerShape(999.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        ),
-                    )
-                }
-            }
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("搜索日志") },
-                leadingIcon = { Icon(Icons.TwoTone.Search, contentDescription = null) },
-                shape = RoundedCornerShape(28.dp),
-                singleLine = true,
+        Column(Modifier.padding(padding).fillMaxSize()) {
+            Spacer(Modifier.height(8.dp))
+            com.nekosu.shared.SharedLogContent(
+                model = com.nekosu.shared.SharedLogModel(sources, source, query, filtered, loading),
+                onSelectSource = { source = it },
+                onQueryChange = { query = it },
+                onRefresh = { refresh() },
+                onExport = { downloadLog(filtered, "nekosu-" + source.lowercase() + ".log") },
             )
-            if (loading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            }
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                modifier = Modifier.fillMaxWidth().weight(1f),
-            ) {
-                Text(
-                    text = filtered.ifEmpty { "（无日志）" },
-                    modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp),
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Spacer(Modifier.height(12.dp))
         }
     }
 }
@@ -976,77 +933,13 @@ private fun ThemeSettingsScreen(
             )
         },
     ) { padding ->
-        Column(
-            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Spacer(Modifier.height(4.dp))
-            SettingGroup("深色模式") {
-                SettingRowSurface {
-                    Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("system" to "跟随系统", "light" to "浅色", "dark" to "深色").forEach { (value, label) ->
-                            FilterChip(
-                                selected = darkMode == value,
-                                onClick = { onDarkModeChange(value) },
-                                label = { Text(label) },
-                                shape = RoundedCornerShape(999.dp),
-                            )
-                        }
-                    }
-                }
-            }
-            SettingGroup("主题色") {
-                SettingRowSurface {
-                    Row(
-                        Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        seedColors.forEachIndexed { index, color ->
-                            Box(
-                                Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(color)
-                                    .then(
-                                        if (seedIndex == index) {
-                                            Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                                        } else {
-                                            Modifier
-                                        },
-                                    )
-                                    .clickable { onSeedChange(index) },
-                            )
-                        }
-                    }
-                }
-            }
-            SettingGroup("预览") {
-                SettingRowSurface {
-                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("主色容器", Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        }
-                        Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primary) {
-                            Text("主色", Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onPrimary)
-                        }
-                        Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.tertiaryContainer) {
-                            Text("第三色", Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onTertiaryContainer)
-                        }
-                    }
-                }
-            }
-            SettingGroup("说明") {
-                SettingRowSurface {
-                    Text(
-                        "Web 版使用预设主题色。动态取色（Monet）依赖 Android 壁纸，仅在 App 内生效；深色模式与主题色保存在浏览器本地。",
-                        Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Spacer(Modifier.height(16.dp))
+        Column(Modifier.padding(padding).fillMaxSize()) {
+            Spacer(Modifier.height(8.dp))
+            com.nekosu.shared.SharedThemeContent(
+                model = com.nekosu.shared.SharedThemeModel(darkMode, seedIndex),
+                onDarkModeChange = onDarkModeChange,
+                onSeedChange = onSeedChange,
+            )
         }
     }
 }
