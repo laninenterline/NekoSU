@@ -419,13 +419,21 @@ private fun ModuleScreen() {
                 }
             }
             items(filtered, key = { it.id }) { module ->
-                ModuleCard(
-                    module = module,
-                    enabled = enabledStates[module.id] ?: module.enabled,
-                    onEnabledChange = { enabled ->
+                com.nekosu.shared.SharedModuleCard(
+                    model = com.nekosu.shared.SharedModuleModel(
+                        id = module.id,
+                        name = module.name,
+                        version = module.version,
+                        author = module.author,
+                        description = module.description,
+                        enabled = enabledStates[module.id] ?: module.enabled,
+                        metamodule = module.metamodule,
+                    ),
+                    onCheckedChange = { enabled ->
                         enabledStates[module.id] = enabled
                         moduleScope.launch { AppData.setModuleEnabled(module.id, enabled) }
                     },
+                    onAction = {},
                     onRemove = {
                         moduleScope.launch { AppData.setModuleRemoved(module.id, true) }
                     },

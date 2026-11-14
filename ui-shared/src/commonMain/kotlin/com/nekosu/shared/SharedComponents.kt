@@ -21,6 +21,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -141,4 +142,77 @@ fun SharedSectionTitle(title: String) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
     )
+}
+
+/** 模块卡片（与 App ModulePage 的 ModuleItem 视觉对齐）。 */
+data class SharedModuleModel(
+    val id: String,
+    val name: String,
+    val version: String,
+    val author: String,
+    val description: String,
+    val enabled: Boolean,
+    val update: Boolean = false,
+    val remove: Boolean = false,
+    val metamodule: Boolean = false,
+    val hasWebUi: Boolean = false,
+)
+
+@Composable
+fun SharedModuleCard(
+    model: SharedModuleModel,
+    onCheckedChange: (Boolean) -> Unit,
+    onAction: () -> Unit,
+    onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        model.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (model.enabled) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "Version: ${model.version}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "Author: ${model.author}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = model.enabled,
+                    onCheckedChange = onCheckedChange,
+                    thumbContent = null,
+                )
+            }
+            if (model.description.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    model.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onAction) { Text("操作") }
+                TextButton(onClick = onRemove) {
+                    Text(if (model.remove) "恢复" else "卸载", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+    }
 }
