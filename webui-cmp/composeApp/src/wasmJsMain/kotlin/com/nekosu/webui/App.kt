@@ -14,9 +14,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -62,7 +65,9 @@ import androidx.compose.material.icons.twotone.VolunteerActivism
 import androidx.compose.material.icons.twotone.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -95,6 +100,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontFamily
@@ -152,7 +160,12 @@ fun App() {
         labelSmall = baseTypography.labelSmall.copy(fontFamily = appFont),
     )
 
-    val colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
+    var darkMode by remember { mutableStateOf(getPref("theme.darkMode", "system")) }
+    var seedIndex by remember { mutableStateOf(getPref("theme.seed", "0").toIntOrNull() ?: 0) }
+    val systemDark = isSystemInDarkTheme()
+    val colorScheme = buildColorScheme(darkMode, seedIndex, systemDark)
+    fun changeDarkMode(mode: String) { darkMode = mode; setPref("theme.darkMode", mode) }
+    fun changeSeed(index: Int) { seedIndex = index; setPref("theme.seed", index.toString()) }
     MaterialTheme(typography = typography, colorScheme = colorScheme) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
             Scaffold(
@@ -172,14 +185,31 @@ fun App() {
                 },
             ) { padding ->
                 Box(Modifier.padding(padding).fillMaxSize()) {
-                    if (subScreen == "logs") {
-                        LogCenterScreen(onBack = { subScreen = null })
-                    } else {
-                        when (page) {
+                    when {
+                        subScreen == "logs" -> LogCenterScreen(onBack = { subScreen = null })
+                        subScreen == "kmi" -> KmiScreen(onBack = { subScreen = null })
+                        subScreen == "theme" -> ThemeSettingsScreen(
+                            darkMode = darkMode,
+                            seedIndex = seedIndex,
+                            onDarkModeChange = ::changeDarkMode,
+                            onSeedChange = ::changeSeed,
+                            onBack = { subScreen = null },
+                        )
+                        subScreen == "about" -> AboutScreen(onBack = { subScreen = null })
+                        subScreen?.startsWith("app:") == true -> AppProfileScreen(
+                            uid = subScreen!!.removePrefix("app:").toIntOrNull() ?: 0,
+                            onBack = { subScreen = null },
+                        )
+                        else -> when (page) {
                             0 -> HomeScreen()
-                            1 -> SuperUserScreen()
+                            1 -> SuperUserScreen(onOpenProfile = { subScreen = "app:" + it })
                             2 -> ModuleScreen()
-                            else -> SettingsScreen(onOpenLogs = { subScreen = "logs" })
+                            else -> SettingsScreen(
+                                onOpenLogs = { subScreen = "logs" },
+                                onOpenKmi = { subScreen = "kmi" },
+                                onOpenTheme = { subScreen = "theme" },
+                                onOpenAbout = { subScreen = "about" },
+                            )
                         }
                     }
                 }
@@ -494,7 +524,7 @@ private data class AppGroupMock(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SuperUserScreen() {
+private fun SuperUserScreen(onOpenProfile: (Int) -> Unit) {
     var search by remember { mutableStateOf("") }
     val groups = remember(AppData.groups) {
         AppData.groups.ifEmpty { fallbackGroups() }.map { group ->
@@ -556,10 +586,14 @@ private fun SuperUserScreen() {
                 }
             } else {
                 items(filtered, key = { it.uid }) { group ->
-                    AppGroupCard(group) { allowed ->
-                        groupStates[group.uid] = allowed
-                        routeScope.launch { AppData.setSuperuserRoot(group.uid, allowed) }
-                    }
+                    AppGroupCard(
+                        group = group,
+                        onRootChange = { allowed ->
+                            groupStates[group.uid] = allowed
+                            routeScope.launch { AppData.setSuperuserRoot(group.uid, allowed) }
+                        },
+                        onClick = { onOpenProfile(group.uid) },
+                    )
                 }
             }
         }
@@ -567,9 +601,16 @@ private fun SuperUserScreen() {
 }
 
 @Composable
-private fun AppGroupCard(group: AppGroupMock, onRootChange: (Boolean) -> Unit) {
+private fun AppGroupCard(
+    group: AppGroupMock,
+    onRootChange: (Boolean) -> Unit,
+    onClick: () -> Unit,
+) {
     Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxWidth().clickable { onClick() }.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(48.dp)) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
@@ -628,7 +669,12 @@ private fun LabelPillTonal(text: String, color: androidx.compose.ui.graphics.Col
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SettingsScreen(onOpenLogs: () -> Unit) {
+private fun SettingsScreen(
+    onOpenLogs: () -> Unit,
+    onOpenKmi: () -> Unit,
+    onOpenTheme: () -> Unit,
+    onOpenAbout: () -> Unit,
+) {
     var search by remember { mutableStateOf("") }
     var suLog by remember { mutableStateOf(true) }
     var selinuxHide by remember { mutableStateOf(true) }
@@ -685,7 +731,7 @@ private fun SettingsScreen(onOpenLogs: () -> Unit) {
                 SettingSwitchRow(Icons.TwoTone.Update, "检查管理器更新", "自动检查管理器更新", checkManagerUpdate) { checkManagerUpdate = it }
                 SettingSwitchRow(Icons.TwoTone.Science, "检查测试版更新", "自动检查 main 分支的测试版构建", checkBetaUpdate) { checkBetaUpdate = it }
                 SettingSwitchRow(Icons.Filled.Extension, "检查模块更新", "自动检查已安装模块的更新", checkModuleUpdate) { checkModuleUpdate = it }
-                SettingChevronRow(Icons.TwoTone.Settings, "主题设置", "主题设置")
+                SettingChevronRow(Icons.TwoTone.Settings, "主题设置", "主题设置", onClick = onOpenTheme)
             }
             SettingGroup("内核功能") {
                 SettingSwitchRow(Icons.TwoTone.Science, "Su 兼容模式", "仅由 adbd 或 KernelSU Root 进程启动的 shell 可获取 Root", suLog) { suLog = it }
@@ -694,7 +740,7 @@ private fun SettingsScreen(onOpenLogs: () -> Unit) {
                 SettingChevronRow(Icons.TwoTone.FolderOff, "Umount 路径管理", "管理不挂载模块的路径")
             }
             SettingGroup("工具") {
-                SettingChevronRow(Icons.TwoTone.Science, "KMI / 加载诊断", "设备内核、内置 KMI 匹配与加载状态")
+                SettingChevronRow(Icons.TwoTone.Science, "KMI / 加载诊断", "设备内核、内置 KMI 匹配与加载状态", onClick = onOpenKmi)
                 SettingChevronRow(Icons.AutoMirrored.TwoTone.Article, "日志中心", "SU / Magica / Crash / Metamodule / Problem 日志", onClick = onOpenLogs)
                 SettingChevronRow(Icons.TwoTone.Save, "备份设置", "导出当前设置")
                 SettingChevronRow(Icons.TwoTone.RestartAlt, "恢复设置", "从备份导入设置")
@@ -711,7 +757,7 @@ private fun SettingsScreen(onOpenLogs: () -> Unit) {
                 SettingChevronRow(Icons.TwoTone.Info, "打开 WebUI 页面", "查看地址 / Token / 在浏览器中打开")
             }
             SettingGroup("关于") {
-                SettingChevronRow(Icons.TwoTone.Info, "关于", "版本、开源许可、致谢")
+                SettingChevronRow(Icons.TwoTone.Info, "关于", "版本、开源许可、致谢", onClick = onOpenAbout)
             }
             Spacer(Modifier.height(16.dp))
         }
@@ -898,6 +944,371 @@ private fun LogCenterScreen(onBack: () -> Unit) {
                 )
             }
             Spacer(Modifier.height(12.dp))
+        }
+    }
+}
+
+/* ============================== 主题设置（对照 ThemeSettings） ============================== */
+
+private val seedColors = listOf(
+    Color(0xFF6750A4),
+    Color(0xFF0061A4),
+    Color(0xFF2E6B3F),
+    Color(0xFF8B5000),
+)
+
+private fun buildColorScheme(mode: String, seedIndex: Int, systemDark: Boolean): ColorScheme {
+    val dark = when (mode) {
+        "dark" -> true
+        "light" -> false
+        else -> systemDark
+    }
+    val base = if (dark) darkColorScheme() else lightColorScheme()
+    val seed = seedColors.getOrElse(seedIndex) { seedColors[0] }
+    val primaryContainer = lerp(if (dark) Color.Black else Color.White, seed, if (dark) 0.55f else 0.16f)
+    val onPrimaryContainer = lerp(seed, if (dark) Color.White else Color.Black, if (dark) 0.75f else 0.65f)
+    return base.copy(
+        primary = if (dark) lerp(seed, Color.White, 0.35f) else seed,
+        onPrimary = if (dark) Color.Black else Color.White,
+        primaryContainer = primaryContainer,
+        onPrimaryContainer = onPrimaryContainer,
+        secondary = if (dark) lerp(seed, Color.White, 0.55f) else lerp(seed, Color.Black, 0.25f),
+        tertiary = if (dark) lerp(seed, Color.White, 0.7f) else lerp(seed, Color.Black, 0.4f),
+        surfaceTint = seed,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThemeSettingsScreen(
+    darkMode: String,
+    seedIndex: Int,
+    onDarkModeChange: (String) -> Unit,
+    onSeedChange: (Int) -> Unit,
+    onBack: () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("主题设置", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = "返回")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            )
+        },
+    ) { padding ->
+        Column(
+            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Spacer(Modifier.height(4.dp))
+            SettingGroup("深色模式") {
+                SettingRowSurface {
+                    Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("system" to "跟随系统", "light" to "浅色", "dark" to "深色").forEach { (value, label) ->
+                            FilterChip(
+                                selected = darkMode == value,
+                                onClick = { onDarkModeChange(value) },
+                                label = { Text(label) },
+                                shape = RoundedCornerShape(999.dp),
+                            )
+                        }
+                    }
+                }
+            }
+            SettingGroup("主题色") {
+                SettingRowSurface {
+                    Row(
+                        Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        seedColors.forEachIndexed { index, color ->
+                            Box(
+                                Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(color)
+                                    .then(
+                                        if (seedIndex == index) {
+                                            Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                                        } else {
+                                            Modifier
+                                        },
+                                    )
+                                    .clickable { onSeedChange(index) },
+                            )
+                        }
+                    }
+                }
+            }
+            SettingGroup("预览") {
+                SettingRowSurface {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                            Text("主色容器", Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        }
+                        Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.primary) {
+                            Text("主色", Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onPrimary)
+                        }
+                        Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.tertiaryContainer) {
+                            Text("第三色", Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = MaterialTheme.colorScheme.onTertiaryContainer)
+                        }
+                    }
+                }
+            }
+            SettingGroup("说明") {
+                SettingRowSurface {
+                    Text(
+                        "Web 版使用预设主题色。动态取色（Monet）依赖 Android 壁纸，仅在 App 内生效；深色模式与主题色保存在浏览器本地。",
+                        Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+/* ============================== KMI / 加载诊断 ============================== */
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun KmiScreen(onBack: () -> Unit) {
+    val home = AppData.home ?: fallbackHome()
+    val status = home.status
+    val kernel = status.kernelVersion
+    val kernelText = kernel?.let { "${it.major}.${it.patchLevel}.${it.subLevel}" } ?: "—"
+    val modeText = when (status.lkmMode) {
+        true -> "LKM（可加载内核模块）"
+        false -> "Built-in（内置）"
+        null -> "未知"
+    }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("KMI / 加载诊断", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = "返回")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            )
+        },
+    ) { padding ->
+        Column(
+            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Spacer(Modifier.height(4.dp))
+            if (!status.isRootAvailable) {
+                WarningCard("Root 不可用：加载状态可能不准确", Icons.TwoTone.Warning)
+            }
+            SegmentedSection("内核信息") {
+                InfoRow(Icons.TwoTone.Memory, "内核版本", kernelText)
+                InfoRow(Icons.TwoTone.DeveloperBoard, "内核 release", home.kernelRelease)
+                InfoRow(Icons.TwoTone.Tag, "KMI 推断", formatKmi(kernel))
+                InfoRow(Icons.TwoTone.Android, "Android 版本", home.androidVersion)
+            }
+            SegmentedSection("加载状态") {
+                InfoRow(Icons.TwoTone.TaskAlt, "Root 状态", if (status.isRootAvailable) "可用" else "不可用")
+                InfoRow(Icons.TwoTone.ElectricalServices, "加载模式", modeText)
+                InfoRow(Icons.TwoTone.Science, "加载方式", if (status.isLateLoadMode) "越狱 / late-load" else "开机加载")
+                InfoRow(Icons.TwoTone.Policy, "Hook 类型", status.hookType.ifBlank { "—" })
+            }
+            SegmentedSection("内核模块") {
+                InfoRow(Icons.TwoTone.Tag, "KSU 版本", status.ksuFullVersion ?: "—")
+                InfoRow(Icons.TwoTone.Security, "SELinux", home.selinuxStatus)
+                InfoRow(Icons.TwoTone.FilterList, "Seccomp", seccompText(home.seccompStatus))
+            }
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+/* ============================== 关于 ============================== */
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AboutScreen(onBack: () -> Unit) {
+    val home = AppData.home ?: fallbackHome()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("关于", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = "返回")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            )
+        },
+    ) { padding ->
+        Column(
+            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Spacer(Modifier.height(4.dp))
+            SettingGroup("版本") {
+                SettingRowSurface {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("NekoSU", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "管理器 ${home.version} (${home.versionCode})",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "内核 ${home.status.ksuFullVersion ?: "—"}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            SettingGroup("相关链接") {
+                SettingChevronRow(Icons.TwoTone.Info, "GitHub 仓库", "github.com/laninenterline/NekoSU") {
+                    openUrl("https://github.com/laninenterline/NekoSU")
+                }
+                SettingChevronRow(Icons.TwoTone.MenuBook, "KernelSU", "上游项目与文档") {
+                    openUrl("https://kernelsu.org")
+                }
+                SettingChevronRow(Icons.TwoTone.Tune, "SUSFS", "上游 SUSFS4KSU 源码") {
+                    openUrl("https://gitlab.com/simonpunk/susfs4ksu")
+                }
+            }
+            SettingGroup("开源许可") {
+                SettingRowSurface {
+                    Text(
+                        "NekoSU 基于 KernelSU（GPL-3.0）与 SUSFS（GPL-2.0）构建。\n本项目的完整源码以上述许可证发布，使用前请遵守对应许可证条款。",
+                        Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            SettingGroup("致谢") {
+                SettingRowSurface {
+                    Text(
+                        "感谢 KernelSU、SUSFS、Magisk、KsuWebUI 及所有上游贡献者。\nNekoSU Manager 仅供临时 root（越狱模式）场景使用。",
+                        Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+/* ============================== App Profile 详情 ============================== */
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AppProfileScreen(uid: Int, onBack: () -> Unit) {
+    val groups = AppData.groups.ifEmpty { fallbackGroups() }
+    val group = groups.firstOrNull { it.uid == uid }
+    val primary = group?.apps?.firstOrNull { it.packageName == group.primaryPackageName } ?: group?.apps?.firstOrNull()
+    var allowSu by remember(group) {
+        mutableStateOf(group?.profile?.rootAllowed ?: group?.profile?.allowRoot ?: false)
+    }
+    var umount by remember(group) { mutableStateOf(group?.profile?.umountModules ?: group?.shouldUmount ?: false) }
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("应用详情", fontWeight = FontWeight.SemiBold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.TwoTone.ArrowBack, contentDescription = "返回")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            )
+        },
+    ) { padding ->
+        Column(
+            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Spacer(Modifier.height(4.dp))
+            SettingGroup("应用") {
+                SettingRowSurface {
+                    Column(Modifier.padding(16.dp)) {
+                        Text(
+                            primary?.label ?: group?.primaryPackageName ?: "未知应用",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            group?.primaryPackageName ?: "—",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "UID $uid" + if ((group?.apps?.size ?: 0) > 1) " · 包含 ${group?.apps?.size} 个应用" else "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (allowSu) LabelPill("ROOT")
+                            if (umount) LabelPillTonal("UMOUNT", MaterialTheme.colorScheme.secondaryContainer)
+                            LabelPillTonal(if (allowSu || umount) "CUSTOM" else "DEFAULT", MaterialTheme.colorScheme.tertiaryContainer)
+                            if (group?.primaryPackageName == "com.nekosu") {
+                                LabelPillTonal("MANAGER", MaterialTheme.colorScheme.errorContainer)
+                            }
+                        }
+                    }
+                }
+            }
+            SettingGroup("权限配置") {
+                SettingSwitchRow(
+                    Icons.TwoTone.Security,
+                    "允许 ROOT",
+                    "授予该应用超级用户权限",
+                    allowSu,
+                ) { checked ->
+                    allowSu = checked
+                    scope.launch { AppData.setSuperuserRoot(uid, checked) }
+                }
+                SettingSwitchRow(
+                    Icons.TwoTone.FolderOff,
+                    "不挂载模块",
+                    "该应用运行时默认不挂载任何模块",
+                    umount,
+                ) { checked ->
+                    umount = checked
+                    scope.launch { AppData.setSuperuserUmount(uid, checked) }
+                }
+            }
+            SettingGroup("操作") {
+                SettingRowSurface {
+                    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = {
+                            allowSu = false
+                            umount = false
+                            scope.launch {
+                                AppData.setSuperuserRoot(uid, false)
+                                AppData.setSuperuserUmount(uid, false)
+                            }
+                        }) { Text("恢复默认") }
+                        OutlinedButton(onClick = onBack) { Text("返回列表") }
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
         }
     }
 }

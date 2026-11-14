@@ -159,7 +159,7 @@ class WebUiHttpServer(
             path == "/api/settings" && request.method == "GET" -> handleSettings(out)
             path == "/api/settings/webui" && request.method == "POST" -> handleWebUiSettings(out, request.body)
             path == "/api/refresh" && request.method == "POST" -> handleRefresh(out)
-            path.startsWith("/api/superuser/") && request.method == "POST" -> handleSuperuserRoot(path, out, request.body)
+            path.startsWith("/api/superuser/") && request.method == "POST" -> handleSuperuserProfile(path, out, request.body)
             path == "/api/stop" && request.method == "POST" -> {
                 writeJson(out, 200, """{"ok":true}""")
                 onStopRequested()
@@ -284,13 +284,14 @@ class WebUiHttpServer(
         writeJson(out, 200, """{"ok":true}""")
     }
 
-    private fun handleSuperuserRoot(path: String, out: OutputStream, body: String) {
-        // /api/superuser/<uid>/root  body: {"allowed":true}
+    private fun handleSuperuserProfile(path: String, out: OutputStream, body: String) {
+        // /api/superuser/<uid>/root   body: {"allowed":true}
+        // /api/superuser/<uid>/umount body: {"umount":true}
         val segments = path.trim('/').split('/')
         val uid = segments.getOrNull(2)?.toIntOrNull()
+        val action = segments.getOrNull(3)
         val input = runCatching { gson.fromJson(body, Map::class.java) }.getOrNull()
-        val allowed = (input?.get("allowed") as? Boolean) ?: false
-        if (uid == null || segments.getOrNull(3) != "root") {
+        if (uid == null || (action != "root" && action != "umount")) {
             writeJson(out, 400, """{"error":"bad request"}""")
             return
         }
@@ -300,12 +301,16 @@ class WebUiHttpServer(
                 val group = superUserRepository.state.value.groups.firstOrNull { it.uid == uid } ?: return@runCatching false
                 val packageName = group.primaryPackageName
                 val current = group.profile ?: com.nekosu.domain.model.AppProfile(name = packageName, currentUid = uid)
-                val updated = current.copy(name = packageName, currentUid = uid, allowSu = allowed)
+                val updated = if (action == "root") {
+                    current.copy(name = packageName, currentUid = uid, allowSu = (input?.get("allowed") as? Boolean) ?: false)
+                } else {
+                    current.copy(name = packageName, currentUid = uid, umountModules = (input?.get("umount") as? Boolean) ?: false)
+                }
                 profileRepository.setProfile(updated)
             }.getOrDefault(false)
         }
         if (ok) runBlocking { superUserRepository.refresh() }
-        writeJson(out, 200, gson.toJson(mapOf("ok" to ok, "uid" to uid, "allowed" to allowed)))
+        writeJson(out, 200, gson.toJson(mapOf("ok" to ok, "uid" to uid, "action" to action)))
     }
 
     private fun handleModuleAction(path: String, out: OutputStream) {

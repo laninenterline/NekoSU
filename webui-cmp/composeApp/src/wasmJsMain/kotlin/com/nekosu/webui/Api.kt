@@ -118,6 +118,19 @@ private external fun jsDownload(text: String, name: String)
 
 fun downloadLog(text: String, name: String) = jsDownload(text, name)
 
+@JsFun("(k) => window.localStorage.getItem(k) || ''")
+private external fun jsGetPref(key: String): String
+
+@JsFun("(k, v) => window.localStorage.setItem(k, v)")
+private external fun jsSetPref(key: String, value: String)
+
+@JsFun("(u) => window.open(u, '_blank')")
+private external fun jsOpenUrl(url: String)
+
+fun getPref(key: String, defaultValue: String): String = jsGetPref(key).ifEmpty { defaultValue }
+fun setPref(key: String, value: String) = jsSetPref(key, value)
+fun openUrl(url: String) = jsOpenUrl(url)
+
 @JsFun("() => (window.NEKO_WEBUI && window.NEKO_WEBUI.token) || ''")
 private external fun jsToken(): String
 
@@ -166,6 +179,12 @@ object AppData {
 
     suspend fun setSuperuserRoot(uid: Int, allowed: Boolean): Boolean {
         val ok = post("/api/superuser/$uid/root", "{\"allowed\":$allowed}") != null
+        if (ok) groups = get<List<AppGroupInfo>>("/api/superuser") ?: groups
+        return ok
+    }
+
+    suspend fun setSuperuserUmount(uid: Int, umount: Boolean): Boolean {
+        val ok = post("/api/superuser/$uid/umount", "{\"umount\":$umount}") != null
         if (ok) groups = get<List<AppGroupInfo>>("/api/superuser") ?: groups
         return ok
     }
