@@ -1127,64 +1127,22 @@ private fun AboutScreen(onBack: () -> Unit) {
             )
         },
     ) { padding ->
-        Column(
-            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Spacer(Modifier.height(4.dp))
-            SettingGroup("版本") {
-                SettingRowSurface {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("NekoSU", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "管理器 ${home.version} (${home.versionCode})",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            "内核 ${home.status.ksuFullVersion ?: "—"}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-            SettingGroup("相关链接") {
-                SettingChevronRow(Icons.TwoTone.Info, "GitHub 仓库", "github.com/laninenterline/NekoSU") {
-                    openUrl("https://github.com/laninenterline/NekoSU")
-                }
-                SettingChevronRow(Icons.TwoTone.MenuBook, "KernelSU", "上游项目与文档") {
-                    openUrl("https://kernelsu.org")
-                }
-                SettingChevronRow(Icons.TwoTone.Tune, "SUSFS", "上游 SUSFS4KSU 源码") {
-                    openUrl("https://gitlab.com/simonpunk/susfs4ksu")
-                }
-            }
-            SettingGroup("开源许可") {
-                SettingRowSurface {
-                    Text(
-                        "NekoSU 基于 KernelSU（GPL-3.0）与 SUSFS（GPL-2.0）构建。\n本项目的完整源码以上述许可证发布，使用前请遵守对应许可证条款。",
-                        Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            SettingGroup("致谢") {
-                SettingRowSurface {
-                    Text(
-                        "感谢 KernelSU、SUSFS、Magisk、KsuWebUI 及所有上游贡献者。\nNekoSU Manager 仅供临时 root（越狱模式）场景使用。",
-                        Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+        Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
+            Spacer(Modifier.height(8.dp))
+            com.nekosu.shared.SharedAboutContent(
+                com.nekosu.shared.SharedAboutModel(
+                    appName = "NekoSU",
+                    version = home.version,
+                    versionCode = home.versionCode,
+                    driverVersion = home.status.ksuFullVersion ?: "—",
+                    onOpenUrl = { openUrl(it) },
+                ),
+            )
             Spacer(Modifier.height(16.dp))
         }
     }
 }
+
 
 /* ============================== App Profile 详情 ============================== */
 

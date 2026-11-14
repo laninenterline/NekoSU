@@ -136,73 +136,17 @@ fun AboutScreen() {
             }
 
             item {
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 8.dp, bottom = 12.dp),
-                ) {
-                    StatusCard()
-                }
-            }
-
-            item {
-                WarningCard(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 8.dp, bottom = 12.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(
-                        alpha = cardConfig.cardAlpha,
+                Spacer(modifier = Modifier.height(8.dp))
+                com.nekosu.shared.SharedAboutContent(
+                    com.nekosu.shared.SharedAboutModel(
+                        appName = "NekoSU",
+                        version = com.nekosu.BuildConfig.VERSION_NAME,
+                        versionCode = com.nekosu.BuildConfig.VERSION_CODE,
+                        driverVersion = "—",
+                        onOpenUrl = { uriHandler.openUri(it) },
                     ),
-                    message = AnnotatedString.fromHtml(
-                        htmlString = stringResource(
-                            id = R.string.about_app_icon,
-                            "<b><a href=\"https://github.com/laninenterline\">AzeriNeko</a></b>",
-                        ),
-                        linkStyles = TextLinkStyles(
-                            style = SpanStyle(
-                                color = MaterialTheme.colorScheme.primary,
-                                textDecoration = TextDecoration.Underline,
-                            ),
-                            pressedStyle = SpanStyle(
-                                color = MaterialTheme.colorScheme.primary,
-                                background = MaterialTheme.colorScheme.secondaryContainer,
-                                textDecoration = TextDecoration.Underline,
-                            ),
-                        ),
-                    ),
-                    icon = {
-                        Icon(
-                            imageVector = Icons.TwoTone.Info,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    },
                 )
-            }
-
-            item {
-                SegmentedColumn(
-                    title = stringResource(R.string.about),
-                ) {
-                    item {
-                        SettingsJumpPageWidget(
-                            icon = Icons.TwoTone.Code,
-                            title = stringResource(R.string.get_source_code),
-                            description = stringResource(R.string.get_source_code_detail),
-                            onClick = { uriHandler.openUri("https://github.com/laninenterline/NekoSU") },
-                        )
-                    }
-                    item {
-                        SettingsJumpPageWidget(
-                            icon = Icons.TwoTone.Copyright,
-                            title = stringResource(R.string.open_source_license),
-                            description = stringResource(R.string.open_source_license_settings_description),
-                            onClick = {
-                                navigator.push(Route.OpenSourceLicense)
-                            },
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             item {
