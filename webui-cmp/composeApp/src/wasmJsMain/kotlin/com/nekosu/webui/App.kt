@@ -1169,76 +1169,40 @@ private fun AppProfileScreen(uid: Int, onBack: () -> Unit) {
         },
     ) { padding ->
         Column(
-            Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 8.dp),
         ) {
-            Spacer(Modifier.height(4.dp))
-            SettingGroup("应用") {
-                SettingRowSurface {
-                    Column(Modifier.padding(16.dp)) {
-                        Text(
-                            primary?.label ?: group?.primaryPackageName ?: "未知应用",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            group?.primaryPackageName ?: "—",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            "UID $uid" + if ((group?.apps?.size ?: 0) > 1) " · 包含 ${group?.apps?.size} 个应用" else "",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            if (allowSu) LabelPill("ROOT")
-                            if (umount) LabelPillTonal("UMOUNT", MaterialTheme.colorScheme.secondaryContainer)
-                            LabelPillTonal(if (allowSu || umount) "CUSTOM" else "DEFAULT", MaterialTheme.colorScheme.tertiaryContainer)
-                            if (group?.primaryPackageName == "com.nekosu") {
-                                LabelPillTonal("MANAGER", MaterialTheme.colorScheme.errorContainer)
-                            }
-                        }
-                    }
-                }
-            }
-            SettingGroup("权限配置") {
-                SettingSwitchRow(
-                    Icons.TwoTone.Security,
-                    "允许 ROOT",
-                    "授予该应用超级用户权限",
-                    allowSu,
-                ) { checked ->
+            Spacer(Modifier.height(8.dp))
+            com.nekosu.shared.SharedAppProfileContent(
+                model = com.nekosu.shared.SharedAppProfileModel(
+                    label = primary?.label ?: group?.primaryPackageName ?: "未知应用",
+                    packageName = group?.primaryPackageName ?: "—",
+                    uid = uid,
+                    allowSu = allowSu,
+                    umount = umount,
+                    appsCount = group?.apps?.size ?: 1,
+                    isManager = group?.primaryPackageName == "com.nekosu",
+                ),
+                onRootChange = { checked ->
                     allowSu = checked
                     scope.launch { AppData.setSuperuserRoot(uid, checked) }
-                }
-                SettingSwitchRow(
-                    Icons.TwoTone.FolderOff,
-                    "不挂载模块",
-                    "该应用运行时默认不挂载任何模块",
-                    umount,
-                ) { checked ->
+                },
+                onUmountChange = { checked ->
                     umount = checked
                     scope.launch { AppData.setSuperuserUmount(uid, checked) }
-                }
-            }
-            SettingGroup("操作") {
-                SettingRowSurface {
-                    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = {
-                            allowSu = false
-                            umount = false
-                            scope.launch {
-                                AppData.setSuperuserRoot(uid, false)
-                                AppData.setSuperuserUmount(uid, false)
-                            }
-                        }) { Text("恢复默认") }
-                        OutlinedButton(onClick = onBack) { Text("返回列表") }
+                },
+                onReset = {
+                    allowSu = false
+                    umount = false
+                    scope.launch {
+                        AppData.setSuperuserRoot(uid, false)
+                        AppData.setSuperuserUmount(uid, false)
                     }
-                }
-            }
+                },
+            )
             Spacer(Modifier.height(16.dp))
         }
     }
