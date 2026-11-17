@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stealth_settings_title">Stealth mode</string>
+    <string name="stealth_settings_summary_on">The Manager is disguised as not installed; root pages and the kernel MANAGER flag are hidden</string>
+    <string name="stealth_settings_summary_off">Hide root features by making the Manager look like it is not installed</string>
+    <string name="stealth_settings_unsupported">This kernel does not support stealth mode, or the Manager is not recognized right now</string>
+    <string name="stealth_settings_unsupported_toast">This kernel does not support stealth mode</string>
+    <string name="stealth_settings_failed">Could not change stealth mode; the kernel may be too old or the Manager is not recognized</string>
+    <string name="stealth_settings_enabled_toast">Stealth mode enabled</string>
+    <string name="stealth_settings_disabled_toast">Stealth mode disabled</string>
+    <string name="stealth_settings_dial_hint">Disable stealth with dialer code: *#*#%1$s#*#*</string>
+    <string name="stealth_restore_disabled">Stealth mode disabled</string>
+    <string name="stealth_restore_not_enabled">Stealth mode is not enabled</string>
+    <string name="stealth_restore_unsupported">This kernel does not support stealth mode</string>
+    <string name="stealth_restore_failed">Could not disable stealth mode; restart the device or check the kernel support</string>
+    <string name="stealth_restore_launch_failed">Stealth mode was disabled, but the Manager could not be opened; tap the app icon</string>
+    <string name="stealth_home_inactive">NekoSU is not active</string>
+    <string name="stealth_home_inactive_hint">No active KernelSU manager was detected</string>
+    <string name="hide_desktop_icon_title">Hide desktop icon</string>
+    <string name="hide_desktop_icon_summary">Hide the launcher entry. Recover with * # * # 736284 # * # *.</string>
+        <string name="hot_update_title">Hot-update kernel module</string>
+    <string name="hot_update_summary">Unload the running kernel module and load the new one without re-running the exploit.</string>
+    <string name="hot_update_started">Hot-update started; the Manager will restart shortly.</string>
+    <string name="hot_update_failed">Could not start hot-update (kcud missing or root unavailable).</string>
+    <string name="hot_update_capability_title">Allow kernel hot-update</string>
+    <string name="hot_update_capability_summary">Keep the kernel module unloadable so it can be replaced without re-rooting. Exposes /sys/module/kernelsu; takes effect after the next module load.</string>
+    <string name="hot_update_capability_hint">Hot-update capability saved. Run late-load once for it to take effect.</string>
+</resources>

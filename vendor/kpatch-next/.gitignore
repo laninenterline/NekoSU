@@ -1,0 +1,11 @@
+.vscode/*
+.history/
+
+**/.DS_Store
+
+build
+
+test
+script
+
+*.zip

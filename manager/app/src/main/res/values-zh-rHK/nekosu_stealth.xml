@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stealth_settings_title">隱身模式</string>
+    <string name="stealth_settings_summary_on">管理器偽裝成未安裝，隱藏 root 頁面同核心 MANAGER 標誌</string>
+    <string name="stealth_settings_summary_off">令管理器顯示為未安裝，藉此隱藏 root 特徵</string>
+    <string name="stealth_settings_unsupported">目前核心未支援隱身模式，或者管理器暫時未獲識別</string>
+    <string name="stealth_settings_unsupported_toast">目前核心未支援隱身模式</string>
+    <string name="stealth_settings_failed">未能切換隱身模式；核心可能太舊或者管理器未獲識別</string>
+    <string name="stealth_settings_enabled_toast">已開啟隱身模式</string>
+    <string name="stealth_settings_disabled_toast">已關閉隱身模式</string>
+    <string name="stealth_settings_dial_hint">撥號盤輸入密令關閉隱身：*#*#%1$s#*#*</string>
+    <string name="stealth_restore_disabled">已關閉隱身模式</string>
+    <string name="stealth_restore_not_enabled">隱身模式未開啟</string>
+    <string name="stealth_restore_unsupported">目前核心未支援隱身模式</string>
+    <string name="stealth_restore_failed">未能關閉隱身模式；請重啟裝置或者檢查核心支援</string>
+    <string name="stealth_restore_launch_failed">隱身已關閉，但開唔到管理器，請撳桌面圖示</string>
+    <string name="stealth_home_inactive">NekoSU 未啟動</string>
+    <string name="stealth_home_inactive_hint">偵測唔到使用中嘅 KernelSU 管理器</string>
+    <string name="hide_desktop_icon_title">隱藏桌面圖標</string>
+    <string name="hide_desktop_icon_summary">隱藏桌面入口；需要恢復時撥號 *#*#736284#*#*。</string>
+        <string name="hot_update_title">熱更新內核模組</string>
+    <string name="hot_update_summary">不重新提權，卸載目前內核模組並載入新模組。</string>
+    <string name="hot_update_started">已開始熱更新，管理器稍後會自動重啟。</string>
+    <string name="hot_update_failed">無法開始熱更新（ksud 缺失或沒有 root）。</string>
+    <string name="hot_update_capability_title">允許內核熱更新</string>
+    <string name="hot_update_capability_summary">保留模組可卸載能力，之後無需重新提權即可替換；會暴露 /sys/module/kernelsu，下次 late-load 生效。</string>
+    <string name="hot_update_capability_hint">已保存熱更新能力，重新 late-load 一次後生效。</string>
+</resources>

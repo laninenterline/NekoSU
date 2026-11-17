@@ -1,0 +1,129 @@
+name: Debug KO in QEMU
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ylarod/ddk-min:android15-6.6-20260828
+      options: --privileged
+    env:
+      KSU_EXPECTED_SIZE: ${{ secrets.KSU_EXPECTED_SIZE }}
+      KSU_EXPECTED_HASH: ${{ secrets.KSU_EXPECTED_HASH }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mark workspace safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Build kernelsu.ko
+        run: |
+          set -euo pipefail
+          cd kernel
+          CONFIG_KSU=m \
+          CONFIG_KSU_MULTI_MANAGER_SUPPORT=y \
+          CONFIG_KSU_TRACEPOINT_HOOK=y \
+          KSU_EXPECTED_SIZE="$KSU_EXPECTED_SIZE" \
+          KSU_EXPECTED_HASH="$KSU_EXPECTED_HASH" \
+          CC=clang make
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cp kernelsu.ko "$GITHUB_WORKSPACE/out/kernelsu.ko"
+      - name: Build/collect kernel Image
+        run: |
+          set -euxo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          cd /opt/ddk/kdir/android15-6.6
+          ls -l arch/arm64/boot/ || true
+          if [ ! -f arch/arm64/boot/Image ]; then
+            make ARCH=arm64 LLVM=1 Image -j"$(nproc)" 2>&1 | tail -40 || true
+          fi
+          ls -l arch/arm64/boot/ || true
+          test -f arch/arm64/boot/Image
+          cp arch/arm64/boot/Image "$GITHUB_WORKSPACE/out/Image"
+          cp /opt/ddk/kdir/android15-6.6/.config "$GITHUB_WORKSPACE/out/kernel.config" || true
+          ls -l "$GITHUB_WORKSPACE/out"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qemu-inputs
+          path: out
+          if-no-files-found: error
+
+  boot:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: qemu-inputs
+          path: in
+      - name: Install qemu
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq qemu-system-arm cpio gzip gcc-aarch64-linux-gnu >/dev/null
+          qemu-system-aarch64 --version | head -1
+      - name: Boot kernel and insmod KO
+        run: |
+          set -euxo pipefail
+          mkdir -p root/{bin,proc,sys,dev,tmp}
+          cp userspace/ksud/bin/aarch64/busybox root/bin/busybox
+          aarch64-linux-gnu-gcc -static -O2 tools/qemu_loader.c -o root/loader
+          chmod +x root/bin/busybox
+          ln -sf busybox root/bin/sh
+          ln -sf busybox root/bin/find
+          ln -sf busybox root/bin/mount
+          ln -sf busybox root/bin/insmod
+          ln -sf busybox root/bin/dmesg
+          ln -sf busybox root/bin/cat
+          ln -sf busybox root/bin/ls
+          ln -sf busybox root/bin/poweroff
+          ln -sf busybox root/bin/rmmod
+          for applet in awk grep cut sort uniq tr head tail wc; do ln -sf busybox "root/bin/$applet"; done
+          ln -sf busybox root/bin/sleep
+          cp in/kernelsu.ko root/kernelsu.ko
+          cat > root/init <<'EOF'
+          #!/bin/sh
+          mount -t proc proc /proc
+          mount -t sysfs sys /sys
+          mount -t devtmpfs dev /dev 2>/dev/null || true
+          echo "=== QEMU BOOT OK ==="
+          uname -a
+          echo "=== MODINFO ==="
+          cat /sys/module/kernelsu/version 2>/dev/null || true
+          echo "=== LOADER ==="
+          ./loader /kernelsu.ko "allow_unload=1 block_modules=" 2>&1 || echo "LOADER_EXIT=$?"
+          sleep 2
+          echo "=== HOT-UPDATE TEST: rmmod ==="
+          rmmod kernelsu 2>&1 || echo "RMMOD_RC=$?"
+          sleep 1
+          echo "=== HOT-UPDATE TEST: reload ==="
+          ./loader /kernelsu.ko "allow_unload=1 block_modules=" 2>&1 || echo "RELOAD_RC=$?"
+          sleep 1
+          echo "=== MOUNTINFO IDS ==="
+          awk '{print $1}' /proc/self/mountinfo | tr '\n' ' ' | head -c 600
+          echo
+          echo "=== MOUNTINFO MASTERS ==="
+          grep -o "master:[0-9]*" /proc/self/mountinfo | cut -d: -f2 | sort -n | uniq | tr '\n' ' '
+          echo
+          echo "=== DMESG TAIL ==="
+          dmesg | tail -120
+          echo "=== POWEROFF ==="
+          echo o > /proc/sysrq-trigger
+          EOF
+          chmod +x root/init
+          ( cd root && find . | cpio -o -H newc 2>/dev/null | gzip -9 > ../initramfs.cpio.gz )
+          test -f in/Image
+          KERNEL=in/Image
+          timeout 180 qemu-system-aarch64 \
+            -M virt -cpu cortex-a72 -m 2048 -smp 2 -nographic -no-reboot \
+            -kernel "$KERNEL" -initrd initramfs.cpio.gz \
+            -append "console=ttyAMA0 rdinit=/init panic=1 nokaslr selinux=0" \
+            2>&1 | tee qemu.log || true
+          echo "=== PANIC GREP ==="
+          grep -nE "Kernel panic|Unable to handle|Internal error|Call trace|BUG:|Oops|insmod|kernelsu" qemu.log | tail -60 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qemu-log
+          path: qemu.log
+          if-no-files-found: ignore

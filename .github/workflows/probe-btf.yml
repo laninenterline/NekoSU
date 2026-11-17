@@ -1,0 +1,15 @@
+name: Probe BTF proto
+on:
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ylarod/ddk-min:android15-6.6-20260828
+      options: --privileged
+    steps:
+      - name: grep btf prototypes
+        run: |
+          set -x
+          grep -n "btf_find_by_name_kind\|btf_name_by_offset\|btf_type_skip_modifiers\|bpf_get_btf_vmlinux" /opt/ddk/kdir/android15-6.6/include/linux/btf.h || true
+          sed -n '/btf_find_by_name_kind/,/;/p' /opt/ddk/kdir/android15-6.6/include/linux/btf.h || true

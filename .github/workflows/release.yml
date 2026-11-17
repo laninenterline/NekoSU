@@ -1,0 +1,324 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.0-canary.5)'
+        required: false
+        default: '' 
+
+permissions:
+  contents: write
+
+jobs:
+  lkm:
+    # arm64 kernelsu.ko + arm64 susfs_guard_lkm.ko, per KMI.
+    uses: ./.github/workflows/build-lkm.yml
+    secrets: inherit
+    with:
+      kmis: '["android12-5.10","android13-5.10","android13-5.15","android14-5.15","android14-6.1","android15-6.6","android16-6.12","android17-6.18"]'
+
+  lkm-x86_64:
+    # x86_64 kernelsu.ko via the DDK x86 build, per KMI. Best effort: every step is
+    # continue-on-error so an experimental x86 build never blocks the arm64 release.
+    # Build recipe mirrors the x86 branch of .github/workflows/ddk-lkm.yml (that reusable
+    # workflow cannot be made non-blocking, so it is inlined here).
+    # Upstream susfs4ksu-lkm only ships arm64 (module.yaml architectures: [arm64-v8a]),
+    # so x86_64 has no SUSFS LKM.
+    name: x86_64 LKM ${{ matrix.kmi }}
+    strategy:
+      fail-fast: false
+      matrix:
+        kmi: ["android12-5.10","android13-5.10","android13-5.15","android14-5.15","android14-6.1","android15-6.6","android16-6.12","android17-6.18"]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ylarod/ddk-min:${{ matrix.kmi }}-20260828
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mark workspace safe
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Build x86_64 kernelsu.ko (best effort)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          cd kernel
+
+          echo "=== Preparing KDIR for x64 ==="
+          mkdir -p /opt/ddk/kdir-x64
+          unset ARCH
+          unset CROSS_COMPILE
+          export ARCH=x86_64
+          KMI="${{ matrix.kmi }}"
+          pushd "/opt/ddk/src/$KMI"
+          export KDIR="/opt/ddk/kdir-x64/$KMI"
+
+          # ddk-min images contain the source tarball, whose modpost patch is
+          # not applied to the fresh x86 kdir. Keep the patch idempotent.
+          MODPOST=scripts/mod/modpost.c
+          sed -i -E 's/^([[:space:]]*)check_exports\(mod\);/\1\/\/ check_exports(mod);/' "$MODPOST"
+          sed -i -E 's/^([[:space:]]*)s->module = exp->module;/\1\/\/ s->module = exp->module;/' "$MODPOST"
+          sed -i 's/^static void check_exports(/static void __attribute__((unused)) check_exports(/' "$MODPOST"
+          sed -i 's/__version_ext_names\\") =\\n/__version_ext_names\\") = \\"\\"\\n/' "$MODPOST"
+
+          make O="$KDIR" gki_defconfig
+          scripts/config --file "$KDIR/.config" -d LTO_CLANG -e LTO_NONE -d LTO_CLANG_THIN -d LTO_CLANG_FULL -d THINLTO
+          if [ "$KMI" = "android16-6.12" ] || [ "$KMI" = "android17-6.18" ]; then
+            scripts/config --file "$KDIR/.config" -e CONFIG_CFI_ICALL_NORMALIZE_INTEGERS
+          fi
+          make O="$KDIR" modules_prepare
+          # Generate SELinux headers through Kbuild in this x86 output tree.
+          make O="$KDIR" security/selinux/built-in.a
+          popd
+
+          echo "=== Building x64 kernelsu.ko for KMI: $KMI ==="
+          MDIR=$(realpath .)
+          if [ "$KMI" = "android17-6.18" ]; then
+            make -C "$KDIR" M="$MDIR" MO="$MDIR" compile_commands.json modules \
+              CONFIG_KSU=m CONFIG_KSU_MULTI_MANAGER_SUPPORT=y CONFIG_KSU_TRACEPOINT_HOOK=y \
+              CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y
+          else
+            make -C "$KDIR" M="$MDIR" src="$MDIR" compile_commands.json modules \
+              CONFIG_KSU=m CONFIG_KSU_MULTI_MANAGER_SUPPORT=y CONFIG_KSU_TRACEPOINT_HOOK=y \
+              CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y
+          fi
+
+          OUT_DIR=/github/workspace/out/x86_64
+          mkdir -p "$OUT_DIR"
+          cp kernelsu.ko "$OUT_DIR/${KMI}_kernelsu.ko"
+          llvm-strip -d "$OUT_DIR/${KMI}_kernelsu.ko"
+          ls -la "$OUT_DIR/${KMI}_kernelsu.ko"
+
+      - name: Upload x86_64 kernelsu.ko artifact (best effort)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: x86_64-${{ matrix.kmi }}-lkm
+          path: /github/workspace/out/x86_64/${{ matrix.kmi }}_kernelsu.ko
+          if-no-files-found: ignore
+
+  apk:
+    needs: [lkm, lkm-x86_64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download LKM assets
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lkm-*
+          path: userspace/ksud/bin/aarch64
+          merge-multiple: true
+
+      - name: Download x86_64 LKM assets (best effort)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: x86_64-*-lkm
+          path: userspace/ksud/bin/x86_64
+          merge-multiple: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK (preinstalled)
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          [ -d "$SDK" ] || SDK=/usr/local/lib/android/sdk
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          SDKM=$(ls "$SDK"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1)
+          test -n "$SDKM" || { echo "sdkmanager not found under $SDK"; exit 1; }
+          echo "SDKMANAGER=$SDKM" >> "$GITHUB_ENV"
+
+      - name: Install Android SDK components
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install \
+            "build-tools;36.1.0" \
+            "cmake;4.1.0" \
+            "ndk;29.0.14206865" \
+            "platforms;android-37.0" >/dev/null
+          # AGP asks for "platforms/android-37"; API 37 ships as android-37.0
+          ln -sfn android-37.0 "$ANDROID_SDK_ROOT/platforms/android-37"
+          ls "$ANDROID_SDK_ROOT/platforms"
+      - name: Setup Rust (nightly)
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - name: Build and stage ksuinit (best effort)
+        # Same recipe as .github/workflows/ksuinit.yml. Best effort: the release must not be
+        # blocked by ksuinit, and ksud simply embeds whatever was staged.
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
+          build_ksuinit() {
+            local abi="$1" triple="$2" rust_target="$3" builtins="$4"
+            source .github/scripts/setup-rust-build.sh "$triple" 26 "$rust_target"
+            local builtin_path
+            builtin_path="$("$CLANG_PATH" --print-resource-dir)/lib/linux/$builtins"
+            test -f "$builtin_path"
+            RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wno-unused-command-line-argument -C link-arg=$builtin_path" \
+              cargo build --package ksuinit --target="$rust_target" --release \
+                --manifest-path userspace/ksuinit/Cargo.toml
+            mkdir -p "userspace/ksud/bin/$abi"
+            install -m 0755 "userspace/ksuinit/target/$rust_target/release/ksuinit" \
+              "userspace/ksud/bin/$abi/ksuinit"
+            echo "staged ksuinit for $abi"
+          }
+          build_ksuinit aarch64 aarch64-linux-android aarch64-linux-android libclang_rt.builtins-aarch64-android.a
+          build_ksuinit x86_64 x86_64-linux-android x86_64-linux-android libclang_rt.builtins-x86_64-android.a
+
+      - name: Build ksud (arm64-v8a + x86_64)
+        run: |
+          set -euo pipefail
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/29.0.14206865"
+          NDKBIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          # bindgen must cross-compile headers against the NDK sysroot
+          SYSROOT="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
+          build_abi() {
+            local abi="$1" triple="$2" undef="$3"
+            local clang="$NDKBIN/${triple}29-clang"
+            test -x "$clang" || { echo "missing Android clang: $clang"; exit 1; }
+            env \
+              "CC_${undef}=$clang" \
+              "CXX_${undef}=${clang}++" \
+              "AR_${undef}=$NDKBIN/llvm-ar" \
+              "BINDGEN_EXTRA_CLANG_ARGS=--target=$triple --sysroot=$SYSROOT" \
+              "BINDGEN_EXTRA_CLANG_ARGS_${undef}=--target=$triple --sysroot=$SYSROOT" \
+              "CARGO_TARGET_$(echo "$undef" | tr '[:lower:]' '[:upper:]')_LINKER=$clang" \
+              cargo +nightly build --target "$triple" --release \
+                --manifest-path userspace/ksud/Cargo.toml
+            mkdir -p "manager/app/src/main/jniLibs/$abi"
+            cp "userspace/ksud/target/$triple/release/ksud" \
+               "manager/app/src/main/jniLibs/$abi/libksud.so"
+          }
+          build_abi arm64-v8a aarch64-linux-android aarch64_linux_android
+          build_abi x86_64 x86_64-linux-android x86_64_linux_android
+          for abi in arm64-v8a x86_64; do
+            test -s "manager/app/src/main/jniLibs/$abi/libksud.so"
+          done
+          echo "NEKOSU_ABIS=arm64-v8a x86_64" >> "$GITHUB_ENV"
+
+      - name: Prepare signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "RELEASE_KEYSTORE_BASE64 secret is required"; exit 1; }
+          printf '%s' "$KEYSTORE_B64" | base64 -d > /tmp/release.jks
+
+      - name: Build signed release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > manager/local.properties
+          cd manager
+          ./gradlew :app:assembleRelease --no-configuration-cache \
+            -PKEYSTORE_FILE=/tmp/release.jks \
+            -PKEYSTORE_PASSWORD="$KEYSTORE_PASSWORD" \
+            -PKEY_ALIAS="$KEY_ALIAS" \
+            -PKEY_PASSWORD="$KEY_PASSWORD"
+
+      # A failure in either gate below stops the job before anything is published.
+      - name: Audit public source tree
+        run: |
+          set -euo pipefail
+          python3 tools/audit-public-source.py \
+            --output out/manifests/public-source-audit.json
+
+      - name: Verify signed release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          # The universal APK carries every packaged daemon ABI; split APKs are published too.
+          UNIVERSAL=$(ls -t manager/app/build/outputs/apk/release/*universal-release.apk | head -1)
+          test -n "$UNIVERSAL"
+          KSUD_ARGS=()
+          for abi in arm64-v8a x86_64; do
+            KSUD="manager/app/src/main/jniLibs/$abi/libksud.so"
+            if [ ! -f "$KSUD" ]; then
+              case "$abi" in
+                arm64-v8a) TRIPLE=aarch64-linux-android ;;
+                x86_64) TRIPLE=x86_64-linux-android ;;
+              esac
+              KSUD="userspace/ksud/target/$TRIPLE/release/ksud"
+            fi
+            test -f "$KSUD" || { echo "built ksud for $abi not found"; exit 1; }
+            KSUD_ARGS+=("--ksud" "$abi=$KSUD")
+          done
+          export PATH="$ANDROID_SDK_ROOT/build-tools/36.1.0:$PATH"
+          python3 tools/verify-release.py "$UNIVERSAL" \
+            --root . \
+            --package com.nekosu \
+            --abis arm64-v8a,x86_64 \
+            --keystore /tmp/release.jks \
+            --store-password "$KEYSTORE_PASSWORD" \
+            --alias "$KEY_ALIAS" \
+            "${KSUD_ARGS[@]}" \
+            --output out/manifests/release-verification.json
+
+      - name: Upload release verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-verification
+          path: out/manifests/*.json
+          if-no-files-found: ignore
+
+      # SHA256SUMS is published next to the APK and consumed by the Manager
+      # update check (checksums are mandatory when the asset is present).
+      - name: Generate SHA256SUMS
+        run: |
+          set -euo pipefail
+          APK_DIR=manager/app/build/outputs/apk/release
+          # Only checksum the APKs this build actually produced, so a partial release (for
+          # example a single-ABI build) does not fail on absent split/universal files.
+          shopt -s nullglob
+          APKS=( "$APK_DIR"/*arm64-v8a-release.apk "$APK_DIR"/*x86_64-release.apk "$APK_DIR"/*armeabi-v7a-release.apk "$APK_DIR"/*universal-release.apk )
+          shopt -u nullglob
+          test "${#APKS[@]}" -gt 0 || { echo "no release APK was produced"; exit 1; }
+          ( cd "$APK_DIR" && sha256sum "${APKS[@]##*/}" > SHA256SUMS )
+          cat "$APK_DIR/SHA256SUMS"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          APK_DIR=manager/app/build/outputs/apk/release
+          shopt -s nullglob
+          APKS=( "$APK_DIR"/*arm64-v8a-release.apk "$APK_DIR"/*x86_64-release.apk "$APK_DIR"/*armeabi-v7a-release.apk "$APK_DIR"/*universal-release.apk )
+          shopt -u nullglob
+          test "${#APKS[@]}" -gt 0 || { echo "no release APK was produced"; exit 1; }
+          SHA_FILE="$APK_DIR/SHA256SUMS"
+          test -f "$SHA_FILE"
+          PRERELEASE=()
+          case "$TAG" in *canary*|*beta*|*alpha*) PRERELEASE=(--prerelease) ;; esac
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # A manually created draft already holds the tag: upload and publish it.
+            gh release upload "$TAG" "${APKS[@]}" "$SHA_FILE" --clobber
+            gh release edit "$TAG" --draft=false
+          else
+            # Publish immediately (never create a draft) so CI releases are visible.
+            gh release create "$TAG" "${APKS[@]}" "$SHA_FILE" "${PRERELEASE[@]}" --draft=false \
+              --title "NekoSU $TAG" --generate-notes
+          fi

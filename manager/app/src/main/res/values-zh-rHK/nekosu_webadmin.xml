@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webadmin_title">網頁管理員</string>
+    <string name="webadmin_summary_on">由 ksud 常駐提供，關閉 App / 一鍵清理不影響</string>
+    <string name="webadmin_summary_starting">已開啟，正在等待 ksud 服務回應…</string>
+    <string name="webadmin_summary_off">由 ksud 提供的本機網頁管理員，預設關閉</string>
+    <string name="webadmin_reading">正在讀取狀態…</string>
+    <string name="webadmin_open">開啟網頁管理員</string>
+    <string name="webadmin_open_summary">在瀏覽器開啟本機位址（含存取金鑰）</string>
+    <string name="webadmin_copy">複製存取連結</string>
+    <string name="webadmin_copy_summary">複製包含存取金鑰的完整位址</string>
+    <string name="webadmin_copy_ok">已複製存取連結</string>
+    <string name="webadmin_copy_fail">複製存取連結失敗</string>
+    <string name="webadmin_reset">重設存取金鑰</string>
+    <string name="webadmin_reset_summary">舊連結立即失效，並產生新的存取金鑰</string>
+    <string name="webadmin_reset_confirm_title">重設存取金鑰？</string>
+    <string name="webadmin_reset_confirm_message">目前連結/書籤會立即失效，之後可複製新連結。</string>
+    <string name="webadmin_reset_ok">存取金鑰已重設，請複製新連結。</string>
+    <string name="webadmin_reset_failed">重設存取金鑰失敗</string>
+    <string name="webadmin_diagnose">診斷</string>
+    <string name="webadmin_diagnose_summary">收集 ksud 網頁管理員狀態/日誌以協助排錯</string>
+    <string name="webadmin_diagnose_title">網頁管理員診斷</string>
+    <string name="webadmin_copy_all">全部複製</string>
+    <string name="webadmin_copy_all_ok">已複製診斷資訊</string>
+    <string name="webadmin_cancel">取消</string>
+    <string name="webadmin_close">關閉</string>
+    <string name="webadmin_ksud_failed">ksud webadmin 指令執行失敗</string>
+    <string name="webadmin_browser_failed">無法開啟瀏覽器：%1$s</string>
+    <string name="webadmin_not_running">網頁管理員未執行，請先開啟。</string>
+    <string name="webadmin_enabled_ok">網頁管理員已開啟</string>
+    <string name="webadmin_disabled_ok">網頁管理員已關閉</string>
+</resources>
