@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stealth_settings_title">隐身模式</string>
+    <string name="stealth_settings_summary_on">管理器伪装为未安装，隐藏 root 页面与内核 MANAGER 标志</string>
+    <string name="stealth_settings_summary_off">让管理器显示为未安装，从而隐藏 root 特征</string>
+    <string name="stealth_settings_unsupported">当前内核不支持隐身模式，或管理器暂未被识别</string>
+    <string name="stealth_settings_unsupported_toast">当前内核不支持隐身模式</string>
+    <string name="stealth_settings_failed">无法切换隐身模式；内核可能过旧或管理器未被识别</string>
+    <string name="stealth_settings_enabled_toast">已开启隐身模式</string>
+    <string name="stealth_settings_disabled_toast">已关闭隐身模式</string>
+    <string name="stealth_settings_dial_hint">拨号盘输入密令关闭隐身：*#*#%1$s#*#*</string>
+    <string name="stealth_restore_disabled">已关闭隐身模式</string>
+    <string name="stealth_restore_not_enabled">隐身模式未开启</string>
+    <string name="stealth_restore_unsupported">当前内核不支持隐身模式</string>
+    <string name="stealth_restore_failed">无法关闭隐身模式；请重启设备或检查内核支持</string>
+    <string name="stealth_restore_launch_failed">隐身已关闭，但无法打开管理器，请点桌面图标</string>
+    <string name="stealth_home_inactive">NekoSU 未激活</string>
+    <string name="stealth_home_inactive_hint">未检测到活动的 KernelSU 管理器</string>
+    <string name="hide_desktop_icon_title">隐藏桌面图标</string>
+    <string name="hide_desktop_icon_summary">隐藏桌面入口；需要恢复时拨号 *#*#736284#*#*。</string>
+    <string name="usb_hide_title">隐藏 USB 调试状态</string>
+    <string name="usb_hide_summary">检测工具读取 USB 调试状态时被重定向到返回关闭的假键；真实 adb_enabled 与 adb 完全不受影响。</string>
+    <string name="usb_hide_enabled">已隐藏 USB 调试状态（adb 仍可用）</string>
+    <string name="usb_hide_disabled">已恢复正常 USB 调试状态</string>
+</resources>

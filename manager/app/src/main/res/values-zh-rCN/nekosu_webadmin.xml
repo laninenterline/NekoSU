@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webadmin_title">网页管理器</string>
+    <string name="webadmin_summary_on">由 ksud 常驻提供，划掉 App / 一键清理不影响</string>
+    <string name="webadmin_summary_starting">已开启，正在等待 ksud 服务响应…</string>
+    <string name="webadmin_summary_off">由 ksud 提供的本地网页管理器，默认关闭</string>
+    <string name="webadmin_reading">正在读取状态…</string>
+    <string name="webadmin_open">打开网页管理器</string>
+    <string name="webadmin_open_summary">在浏览器中打开本地地址（含访问密钥）</string>
+    <string name="webadmin_copy">复制访问链接</string>
+    <string name="webadmin_copy_summary">复制包含访问密钥的完整地址</string>
+    <string name="webadmin_copy_ok">已复制访问链接</string>
+    <string name="webadmin_copy_fail">复制访问链接失败</string>
+    <string name="webadmin_reset">重置访问密钥</string>
+    <string name="webadmin_reset_summary">旧链接立即失效，并生成新的访问密钥</string>
+    <string name="webadmin_reset_confirm_title">重置访问密钥？</string>
+    <string name="webadmin_reset_confirm_message">当前链接/书签会立即失效，之后可复制新链接。</string>
+    <string name="webadmin_reset_ok">访问密钥已重置，请复制新链接。</string>
+    <string name="webadmin_reset_failed">重置访问密钥失败</string>
+    <string name="webadmin_diagnose">诊断</string>
+    <string name="webadmin_diagnose_summary">收集 ksud 网页管理器状态/日志用于排障</string>
+    <string name="webadmin_diagnose_title">网页管理器诊断</string>
+    <string name="webadmin_copy_all">全部复制</string>
+    <string name="webadmin_copy_all_ok">已复制诊断信息</string>
+    <string name="webadmin_cancel">取消</string>
+    <string name="webadmin_close">关闭</string>
+    <string name="webadmin_ksud_failed">ksud webadmin 命令执行失败</string>
+    <string name="webadmin_browser_failed">无法打开浏览器：%1$s</string>
+    <string name="webadmin_not_running">网页管理器未运行，请先开启。</string>
+    <string name="webadmin_enabled_ok">网页管理器已开启</string>
+    <string name="webadmin_disabled_ok">网页管理器已关闭</string>
+</resources>

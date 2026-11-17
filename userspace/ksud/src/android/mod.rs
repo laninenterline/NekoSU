@@ -1,0 +1,26 @@
+pub mod cli;
+mod debug;
+mod dynamic_manager;
+pub(crate) mod feature;
+mod hot_install;
+mod init_event;
+pub(crate) mod ksucalls;
+mod late_load;
+mod manager_identity;
+pub(crate) mod module;
+mod preinit;
+mod profile;
+pub(crate) mod resetprop;
+pub mod restorecon;
+mod sepolicy;
+mod soft_reboot;
+mod su;
+pub mod usb_hide;
+pub mod cgroup_norm;
+pub mod sulog;
+pub mod susfs;
+#[allow(nonstandard_style, unused, unsafe_op_in_unsafe_fn)]
+pub mod uapi;
+mod umount_config;
+mod unload;
+pub mod utils;

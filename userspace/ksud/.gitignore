@@ -1,0 +1,6 @@
+/target
+.cargo/config.toml
+*.bak
+*.sh
+!src/android/module/installer.sh
+/scripts

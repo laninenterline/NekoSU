@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webadmin_title">Web admin</string>
+    <string name="webadmin_summary_on">Served by ksud (survives app force-stop / one-tap cleanup)</string>
+    <string name="webadmin_summary_starting">Enabled, waiting for the ksud server to respond…</string>
+    <string name="webadmin_summary_off">Local browser admin served by ksud; disabled by default</string>
+    <string name="webadmin_reading">Reading status…</string>
+    <string name="webadmin_open">Open web admin</string>
+    <string name="webadmin_open_summary">Open the local address (contains the access token) in a browser</string>
+    <string name="webadmin_copy">Copy access link</string>
+    <string name="webadmin_copy_summary">Copy the full URL including the access token</string>
+    <string name="webadmin_copy_ok">Access link copied</string>
+    <string name="webadmin_copy_fail">Could not copy the access link</string>
+    <string name="webadmin_reset">Reset access token</string>
+    <string name="webadmin_reset_summary">Invalidate the old link and issue a new access token</string>
+    <string name="webadmin_reset_confirm_title">Reset access token?</string>
+    <string name="webadmin_reset_confirm_message">The current link/bookmark will stop working immediately. You can copy the new link afterwards.</string>
+    <string name="webadmin_reset_ok">Access token reset. Copy the new link.</string>
+    <string name="webadmin_reset_failed">Failed to reset the access token</string>
+    <string name="webadmin_diagnose">Diagnose</string>
+    <string name="webadmin_diagnose_summary">Collect ksud web admin state/log for troubleshooting</string>
+    <string name="webadmin_diagnose_title">Web admin diagnostics</string>
+    <string name="webadmin_copy_all">Copy all</string>
+    <string name="webadmin_copy_all_ok">Diagnostics copied</string>
+    <string name="webadmin_cancel">Cancel</string>
+    <string name="webadmin_close">Close</string>
+    <string name="webadmin_ksud_failed">ksud webadmin command failed</string>
+    <string name="webadmin_browser_failed">Could not open browser: %1$s</string>
+    <string name="webadmin_not_running">Web admin is not running. Enable it first.</string>
+    <string name="webadmin_enabled_ok">Web admin enabled</string>
+    <string name="webadmin_disabled_ok">Web admin disabled</string>
+</resources>

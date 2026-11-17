@@ -1,0 +1,86 @@
+name: Quality
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'manager/**'
+      - '.github/workflows/quality.yml'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK (preinstalled)
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          test -d "$SDK" || { echo "SDK not found"; exit 1; }
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "SDKMANAGER=$SDK/cmdline-tools/latest/bin/sdkmanager" >> "$GITHUB_ENV"
+
+      - name: Install Android SDK components
+        run: |
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install "build-tools;36.1.0" "cmake;4.1.0" "ndk;29.0.14206865" "platforms;android-37.0" >/dev/null
+          ln -sfn android-37.0 "$ANDROID_SDK_ROOT/platforms/android-37"
+
+      - name: Android lint
+        working-directory: manager
+        run: |
+          ./gradlew :app:lintDebug --no-configuration-cache \
+            -Dorg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=512m"
+
+      # These are plain JVM (JUnit 4) tests. They must never need a device,
+      # emulator, Robolectric or the Android framework, so keep `app/src/test`
+      # free of android.* imports and keep instrumented tests out of this repo.
+      - name: Check unit tests are device independent
+        working-directory: manager
+        run: |
+          set -euo pipefail
+          if [ -d app/src/androidTest ]; then
+            echo "::error::app/src/androidTest is not allowed; unit tests live in app/src/test"
+            exit 1
+          fi
+          if grep -R --include="*.kt" -E '^import android\.' app/src/test; then
+            echo "::error::JVM unit tests must not import android.* (no device/Robolectric)"
+            exit 1
+          fi
+
+      - name: Unit tests (JVM)
+        working-directory: manager
+        run: |
+          ./gradlew :app:testDebugUnitTest --no-configuration-cache \
+            -Dorg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=512m"
+
+      # A JVM test task succeeds even when it discovers zero tests. Fail the job
+      # if Gradle produced no JUnit result files, so the suite cannot silently
+      # disappear from a refactor.
+      - name: Verify unit tests actually ran
+        working-directory: manager
+        run: |
+          set -euo pipefail
+          results=app/build/test-results/testDebugUnitTest
+          count=$(find "$results" -name 'TEST-*.xml' | wc -l)
+          echo "Executed $count JUnit test classes"
+          test "$count" -gt 0
+
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: |
+            manager/app/build/test-results/testDebugUnitTest/
+            manager/app/build/reports/tests/testDebugUnitTest/
+          if-no-files-found: ignore
