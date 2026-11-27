@@ -76,10 +76,7 @@ jobs:
         run: |
           set -e
           KMI="${{ matrix.kmi }}"
-          git clone https://github.com/inforcqb/susfs4ksu-lkm.git /tmp/susfs-lkm
-          # Pin: upstream HEAD ba195b9 has literal newlines inside string
-          # literals in kernel/susfs_priority_uid.c and does not compile.
-          git -C /tmp/susfs-lkm checkout 3d6dad1cdfbb72619d9179fdc36ff62e4d0a5888
+          git clone --depth 1 https://github.com/inforcqb/susfs4ksu-lkm.git /tmp/susfs-lkm
           SRCK=/tmp/susfs-lkm/kernel
           KDIR="${KDIR:-/opt/ddk/kdir/$KMI}"
           SOUT=/tmp/susfs-out
